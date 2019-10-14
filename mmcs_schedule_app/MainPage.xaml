@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:d="http://xamarin.com/schemas/2014/forms/design" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="mmcs_schedule_app.MainPage"
+             Title="MMCS Schedule">
+    <StackLayout>
+        <!-- Place new controls here -->
+        <Label Text="Welcome to Xamarin.Forms!" HorizontalOptions="Center"  />
+        <Picker Title="Role" x:Name="Role" VerticalOptions="Start" SelectedIndexChanged="Role_SelectedIndexChanged" >
+            <Picker.ItemsSource>
+                <x:Array Type="{x:Type x:String}">
+                    <x:String>Студент</x:String>
+                    <x:String>Преподаватель</x:String>
+                </x:Array>
+            </Picker.ItemsSource>
+        </Picker>
+        <Picker Title="" x:Name="List_NmOrGr" VerticalOptions="Start" SelectedIndexChanged="List_NmOrGr_SelectedIndexChanged">
+            <Picker.ItemsSource>
+            </Picker.ItemsSource>
+        </Picker>
+        <Picker Title="Group" x:Name="List_Groups" VerticalOptions="Start"
+                SelectedIndexChanged="List_Groups_SelectedIndexChanged"
+                IsVisible="false">
+            <Picker.ItemsSource>
+            </Picker.ItemsSource>
+        </Picker>
+<Button Text="OK" x:Name="Ok_btn" VerticalOptions="EndAndExpand" IsEnabled="False"/>
+    </StackLayout>
+</ContentPage>
