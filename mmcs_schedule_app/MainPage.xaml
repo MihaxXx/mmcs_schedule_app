@@ -3,7 +3,6 @@
              Title="MMCS Schedule">
     <StackLayout>
         <!-- Place new controls here -->
-        <Label Text="Welcome to Xamarin.Forms!" HorizontalOptions="Center"  />
         <Picker Title="Role" x:Name="Role" VerticalOptions="Start" SelectedIndexChanged="Role_SelectedIndexChanged" >
             <Picker.ItemsSource>
                 <x:Array Type="{x:Type x:String}">
@@ -22,6 +21,7 @@
             <Picker.ItemsSource>
             </Picker.ItemsSource>
         </Picker>
-<Button Text="OK" x:Name="Ok_btn" VerticalOptions="EndAndExpand" IsEnabled="False"/>
+        <Label Text="Error: No connection" x:Name="ErrorLabel" HorizontalOptions="Center"  IsVisible="False" IsEnabled="False"/>
+        <Button Text="OK" x:Name="Ok_btn" VerticalOptions="EndAndExpand" IsEnabled="False" Clicked="Ok_btnClicked"/>
     </StackLayout>
 </ContentPage>

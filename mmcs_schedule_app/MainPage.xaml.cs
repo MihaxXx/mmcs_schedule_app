@@ -24,9 +24,12 @@ namespace mmcs_schedule_app
             {
                 Grades = API.GradeMethods.GetGradesList();
                 Teachers = API.TeacherMethods.GetTeachersList();
+                ErrorLabel.IsEnabled = ErrorLabel.IsVisible = false;
             }
-            catch (System.Net.WebException e)
-            { }
+            catch (System.Net.WebException)
+            {
+                ErrorLabel.IsEnabled = ErrorLabel.IsVisible = true;
+            }
         }
         private void Role_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -65,16 +68,25 @@ namespace mmcs_schedule_app
             }
             else
             {
-                for (int i = 0; i < Grades.Length; i++)
+                try
                 {
-                    Grades[i].Groups = API.GradeMethods.GetGroupsList(Grades[i].id).ToList();
+                    for (int i = 0; i < Grades.Length; i++)
+                    {
+                        Grades[i].Groups = API.GradeMethods.GetGroupsList(Grades[i].id).ToList();
+                    }
+
+                    List_Groups.IsVisible = true;
+                    List_Groups.Items.Clear();
+                    foreach (var g in Grades[List_NmOrGr.SelectedIndex].Groups)
+                        List_Groups.Items.Add(g.name + " группа " + g.num);
+                    List_Groups.SelectedIndex = -1;
+                    Ok_btn.IsEnabled = false;
+                    ErrorLabel.IsEnabled = ErrorLabel.IsVisible = false;
                 }
-                List_Groups.IsVisible = true;
-                List_Groups.Items.Clear();
-                foreach (var g in Grades[List_NmOrGr.SelectedIndex].Groups)
-                    List_Groups.Items.Add(g.name + " группа " + g.num);
-                List_Groups.SelectedIndex = -1;
-                Ok_btn.IsEnabled = false;
+                catch (System.Net.WebException)
+                {
+                    ErrorLabel.IsEnabled = ErrorLabel.IsVisible = true;
+                }
             }
         }
         private void List_Groups_SelectedIndexChanged(object sender, EventArgs e)
@@ -84,6 +96,11 @@ namespace mmcs_schedule_app
                 return;
             user.groupid = Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].id;
             Ok_btn.IsEnabled = true;
+        }
+
+        async private void Ok_btnClicked(object sender, EventArgs e)
+        {
+            await Navigation.PushAsync(new ScheduleView());
         }
 
         public static string StuDegreeShort(string degree)
