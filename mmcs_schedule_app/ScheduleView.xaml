@@ -1,5 +1,33 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <ContentPage xmlns="http://xamarin.com/schemas/2014/forms" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="mmcs_schedule_app.ScheduleView">
     <StackLayout>
+        <ListView ItemsSource="{Binding Shed}" HasUnevenRows="true">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell>
+                        <Grid Padding="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.RowSpan="2"
+                                   Grid.Column="0"
+                                   Text="{Binding timeslot}"
+                                   FontAttributes="Bold" />
+                            <Label Grid.Row="0"
+                                   Grid.Column="1"
+                                   Text="{Binding name}"/>
+                            <Label Grid.Row="1"
+                                   Grid.Column="1"
+                                   Text="{Binding weektypes}"/>
+                        </Grid>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
     </StackLayout>
 </ContentPage>

@@ -3,7 +3,7 @@
 
 namespace API
 {
-    class User
+    public class User
     {
         /// <summary>
         /// Type of user
@@ -17,6 +17,11 @@ namespace API
         /// Id of user`s group
         /// </summary>
         public int groupid = 0;
+
+        public int course = 0;
+
+        public int group = 0;
+
         /// <summary>
         /// The last access time.
         /// </summary>

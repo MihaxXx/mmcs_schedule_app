@@ -36,7 +36,7 @@ namespace mmcs_schedule_app
             var picker = sender as Picker;
             if (picker.SelectedIndex == 0)
             {
-                //FIXME Incorrect assign (not always a bachelor)
+                //Set to fix user is a student, later reaasigned to correct grade
                 user.Info = API.User.UserInfo.bachelor;
                 List_NmOrGr.Items.Clear();
                 List_NmOrGr.Title = "Grade";
@@ -68,6 +68,14 @@ namespace mmcs_schedule_app
             }
             else
             {
+                switch(Grades[List_NmOrGr.SelectedIndex].degree)
+                {
+                    case "bachelor": user.Info = API.User.UserInfo.bachelor; break;
+                    case "master": user.Info = API.User.UserInfo.master; break; 
+                    case "specialist": user.Info = API.User.UserInfo.bachelor; break; 
+                    case "postgraduate": user.Info = API.User.UserInfo.graduate; break;
+                }
+                user.course = Grades[List_NmOrGr.SelectedIndex].num;
                 try
                 {
                     for (int i = 0; i < Grades.Length; i++)
@@ -94,23 +102,29 @@ namespace mmcs_schedule_app
             var picker = sender as Picker;
             if (picker.SelectedIndex == -1)
                 return;
+            user.group = Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].num;
             user.groupid = Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].id;
             Ok_btn.IsEnabled = true;
         }
 
         async private void Ok_btnClicked(object sender, EventArgs e)
         {
-            await Navigation.PushAsync(new ScheduleView());
+            await Navigation.PushAsync(new ScheduleView(user.Info, user.Info == API.User.UserInfo.teacher ? user.teacherId : user.groupid)
+            {
+                Title = user.Info == API.User.UserInfo.teacher ? List_NmOrGr.Items[List_NmOrGr.SelectedIndex] :
+                string.Join(" ", StuDegreeShort(user.Info.ToString()), Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].name, user.course + "." + user.group),
+        }) ;
+            
         }
 
         public static string StuDegreeShort(string degree)
         {
             switch (degree)
             {
-                case "bachelor": return "бак.";
-                case "master": return "маг.";
-                case "specialist": return "спец.";
-                case "postgraduate": return "асп.";
+                case "bachelor": return "Бак.";
+                case "master": return "Маг.";
+                case "specialist": return "Спец.";
+                case "graduate": return "Асп.";
                 default: return "н/д";
             }
         }
