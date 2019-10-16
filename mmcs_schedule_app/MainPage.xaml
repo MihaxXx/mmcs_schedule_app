@@ -2,7 +2,7 @@
 <ContentPage xmlns="http://xamarin.com/schemas/2014/forms" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:d="http://xamarin.com/schemas/2014/forms/design" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="mmcs_schedule_app.MainPage"
              Title="MMCS Schedule">
     <StackLayout Margin="0,15,0,0"> <!-- Fix to make dist above 1st field equal to dist above all other -->
-        <Picker Title="Role" x:Name="Role" VerticalOptions="Start" SelectedIndexChanged="Role_SelectedIndexChanged" >
+        <Picker Title="Студент/Преподаватель" x:Name="Role" VerticalOptions="Start" SelectedIndexChanged="Role_SelectedIndexChanged" >
             <Picker.ItemsSource>
                 <x:Array Type="{x:Type x:String}">
                     <x:String>Студент</x:String>
@@ -10,11 +10,11 @@
                 </x:Array>
             </Picker.ItemsSource>
         </Picker>
-        <Picker Title="" x:Name="List_NmOrGr" VerticalOptions="Start" SelectedIndexChanged="List_NmOrGr_SelectedIndexChanged">
+        <Picker Title="" x:Name="List_NmOrGr" IsVisible="False" VerticalOptions="Start" SelectedIndexChanged="List_NmOrGr_SelectedIndexChanged">
             <Picker.ItemsSource>
             </Picker.ItemsSource>
         </Picker>
-        <Picker Title="Group" x:Name="List_Groups" VerticalOptions="Start"
+        <Picker Title="Группа" x:Name="List_Groups" VerticalOptions="Start"
                 SelectedIndexChanged="List_Groups_SelectedIndexChanged"
                 IsVisible="false">
             <Picker.ItemsSource>

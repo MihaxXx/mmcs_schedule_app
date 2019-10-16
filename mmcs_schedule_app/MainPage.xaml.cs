@@ -39,7 +39,7 @@ namespace mmcs_schedule_app
                 //Set to fix user is a student, later reaasigned to correct grade
                 user.Info = API.User.UserInfo.bachelor;
                 List_NmOrGr.Items.Clear();
-                List_NmOrGr.Title = "Grade";
+                List_NmOrGr.Title = "Курс";
                 foreach (var gr in Grades)
                     List_NmOrGr.Items.Add(StuDegree(gr.degree) + " " + gr.num + " курс");
             }
@@ -47,11 +47,12 @@ namespace mmcs_schedule_app
             {
                 user.Info = API.User.UserInfo.teacher;
                 List_NmOrGr.Items.Clear();
-                List_NmOrGr.Title = "Name";
+                List_NmOrGr.Title = "Имя";
                 foreach (var t in Teachers)
                     List_NmOrGr.Items.Add(t.name);
             }
             List_NmOrGr.SelectedIndex = -1;
+            List_NmOrGr.IsVisible = true;
             List_Groups.IsVisible = false;
             Ok_btn.IsEnabled = false;
         }
