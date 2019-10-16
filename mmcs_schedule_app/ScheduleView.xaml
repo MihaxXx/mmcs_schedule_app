@@ -26,7 +26,8 @@
                                    Text="{Binding name}"/>
                             <Label Grid.Row="1"
                                    Grid.Column="1"
-                                   Text="{Binding weektypes}"/>
+                                   Text="{Binding weektypes}"
+                                   FontAttributes="Italic"/>
                         </Grid>
                     </ViewCell>
                 </DataTemplate>

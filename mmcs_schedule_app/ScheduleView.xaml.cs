@@ -55,7 +55,7 @@ namespace mmcs_schedule_app
                 foreach (var LLC in TeacherMethods.RequestWeekSchedule(id))
                 {
                     var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
-                    Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname, tol.week == -1 ? "" : tol.week.ToString(), tol, LLC));
+                    Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname, tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя", tol, LLC));
                 }
             }
             else
@@ -63,7 +63,7 @@ namespace mmcs_schedule_app
                 foreach (var LLC in StudentMethods.RequestWeekSchedule(id))
                 {
                     var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
-                    Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname, tol.week == -1 ? "" : tol.week.ToString(), tol, LLC));
+                    Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname, tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя", tol, LLC));
                 }
             }
             //Gets russian day names, possible to use CurrentInfo, but app has no localization, so no reason for that
