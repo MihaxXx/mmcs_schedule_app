@@ -73,7 +73,7 @@ namespace API
 
 		public override string ToString()
 		{
-			return $"{(day + 1)}. {starth:D2}:{startm:D2} \n{finishh:D2}:{finishm:D2}";
+			return $"{starth:D2}:{startm:D2}\n{finishh:D2}:{finishm:D2}";
 		}
 
 		public bool Equals(TimeOfLesson other)
