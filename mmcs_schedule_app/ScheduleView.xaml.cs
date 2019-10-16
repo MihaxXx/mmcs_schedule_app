@@ -42,12 +42,14 @@ namespace mmcs_schedule_app
 
         Week weektype;
 
+        List<LessonItem> Shed;
+
         public IEnumerable<IGrouping<string,LessonItem>> GroupedShed { get; private set; }
 
         public ScheduleView(API.User.UserInfo utype, int idd)
         {
             InitializeComponent();
-            var Shed = new List<LessonItem>();
+            Shed = new List<LessonItem>();
             usertype = utype;
             id = idd;
             if (usertype == User.UserInfo.teacher)
