@@ -76,5 +76,11 @@ namespace mmcs_schedule_app
             BindingContext = this;
 
         }
+        private void OnExitClicked(object sender, EventArgs e)
+        {
+            if(Navigation.NavigationStack.Count==0)
+                Navigation.InsertPageBefore(new MainPage() { _coldstart = false }, this);
+            Navigation.PopAsync();
+        }
     }
 }

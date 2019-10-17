@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Forms;
+using Newtonsoft.Json;
 
 namespace mmcs_schedule_app
 {
@@ -16,6 +18,26 @@ namespace mmcs_schedule_app
         API.Grade[] Grades;
         API.Teacher[] Teachers;
         API.User user = new API.User();
+        string _fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "settings.json");
+        public bool _coldstart = true;
+        ScheduleView schedule;
+
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+
+            if (File.Exists(_fileName)&& _coldstart)
+            {
+                user = JsonConvert.DeserializeObject<API.User>(File.ReadAllText(_fileName, Encoding.UTF8));
+                Role.SelectedIndex = user.Info == API.User.UserInfo.teacher ? 1 : 0;
+                List_NmOrGr.SelectedIndex = user.list1selID;
+                if (user.Info != API.User.UserInfo.teacher)
+                    List_Groups.SelectedIndex = user.list2selID;
+                Ok_btnClicked(Ok_btn, new EventArgs());
+            }
+            _coldstart = false;
+        }
+
 
         public MainPage()
         {
@@ -30,6 +52,7 @@ namespace mmcs_schedule_app
             {
                 ErrorLabel.IsEnabled = ErrorLabel.IsVisible = true;
             }
+
         }
         private void Role_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -61,6 +84,7 @@ namespace mmcs_schedule_app
             var picker = sender as Picker;
             if (picker.SelectedIndex == -1)
                 return;
+            user.list1selID = picker.SelectedIndex;
             if (user.Info == API.User.UserInfo.teacher)
             {
                 List_Groups.IsVisible = false;
@@ -103,6 +127,7 @@ namespace mmcs_schedule_app
             var picker = sender as Picker;
             if (picker.SelectedIndex == -1)
                 return;
+            user.list2selID = List_Groups.SelectedIndex;
             user.group = Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].num;
             user.groupid = Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].id;
             Ok_btn.IsEnabled = true;
@@ -110,11 +135,14 @@ namespace mmcs_schedule_app
 
         async private void Ok_btnClicked(object sender, EventArgs e)
         {
-            await Navigation.PushAsync(new ScheduleView(user.Info, user.Info == API.User.UserInfo.teacher ? user.teacherId : user.groupid)
+            File.WriteAllText(_fileName, JsonConvert.SerializeObject(user, Formatting.Indented), Encoding.UTF8);
+            schedule = new ScheduleView(user.Info, user.Info == API.User.UserInfo.teacher ? user.teacherId : user.groupid)
             {
                 Title = user.Info == API.User.UserInfo.teacher ? List_NmOrGr.Items[List_NmOrGr.SelectedIndex] :
                 string.Join(" ", StuDegreeShort(user.Info.ToString()), Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].name, user.course + "." + user.group),
-        }) ;
+            };
+          
+            await Navigation.PushAsync(schedule);
             
         }
 

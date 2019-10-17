@@ -22,6 +22,10 @@ namespace API
 
         public int group = 0;
 
+        public int list1selID = -1;
+
+        public int list2selID = -1;
+
         /// <summary>
         /// The last access time.
         /// </summary>
