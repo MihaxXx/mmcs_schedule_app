@@ -26,10 +26,7 @@ namespace API
 
         public int list2selID = -1;
 
-        /// <summary>
-        /// The last access time.
-        /// </summary>
-        public DateTime LastAccess = new DateTime(2019,4,23,17,30,00); //presentation date
+        public string header;
 
         /// <summary>
         /// Possible types of users

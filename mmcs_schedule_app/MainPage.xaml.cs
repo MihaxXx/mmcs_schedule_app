@@ -18,24 +18,22 @@ namespace mmcs_schedule_app
         API.Grade[] Grades;
         API.Teacher[] Teachers;
         API.User user = new API.User();
-        string _fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "settings.json");
-        public bool _coldstart = true;
-        ScheduleView schedule;
 
         protected override void OnAppearing()
         {
             base.OnAppearing();
 
-            if (File.Exists(_fileName)&& _coldstart)
+            if (App._isLoggedIn)
             {
-                user = JsonConvert.DeserializeObject<API.User>(File.ReadAllText(_fileName, Encoding.UTF8));
+                user = App.user;
                 Role.SelectedIndex = user.Info == API.User.UserInfo.teacher ? 1 : 0;
                 List_NmOrGr.SelectedIndex = user.list1selID;
                 if (user.Info != API.User.UserInfo.teacher)
                     List_Groups.SelectedIndex = user.list2selID;
-                Ok_btnClicked(Ok_btn, new EventArgs());
+                App._isLoggedIn = false;
+                File.Delete(App._fileName);
+                App.user = new API.User();
             }
-            _coldstart = false;
         }
 
 
@@ -135,14 +133,14 @@ namespace mmcs_schedule_app
 
         async private void Ok_btnClicked(object sender, EventArgs e)
         {
-            File.WriteAllText(_fileName, JsonConvert.SerializeObject(user, Formatting.Indented), Encoding.UTF8);
-            schedule = new ScheduleView(user.Info, user.Info == API.User.UserInfo.teacher ? user.teacherId : user.groupid)
-            {
-                Title = user.Info == API.User.UserInfo.teacher ? List_NmOrGr.Items[List_NmOrGr.SelectedIndex] :
-                string.Join(" ", StuDegreeShort(user.Info.ToString()), Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].name, user.course + "." + user.group),
-            };
-          
-            await Navigation.PushAsync(schedule);
+            user.header = user.Info == API.User.UserInfo.teacher ? List_NmOrGr.Items[List_NmOrGr.SelectedIndex] :
+                string.Join(" ", StuDegreeShort(user.Info.ToString()), Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].name, user.course + "." + user.group);
+            App.user = user;
+            File.WriteAllText(App._fileName, JsonConvert.SerializeObject(App.user, Formatting.Indented), Encoding.UTF8);
+            App._isLoggedIn = true;
+            //await Navigation.PushAsync(new ScheduleView());
+            Navigation.InsertPageBefore(new ScheduleView(), this);
+            await Navigation.PopAsync();
             
         }
 

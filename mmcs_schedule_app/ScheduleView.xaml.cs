@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+
 
 using API;
 
@@ -13,7 +15,7 @@ namespace mmcs_schedule_app
         public string time { get; set; }
         public string name { get; set; }
         public string weektypes { get; set; }
-        public TimeOfLesson timeslot;
+        public TimeOfLesson timeslot { get; set; }
         (Lesson, List<Curriculum>, List<TechGroup>) TData;
         (Lesson, List<Curriculum>) SData;
 
@@ -36,25 +38,19 @@ namespace mmcs_schedule_app
     }
     public partial class ScheduleView : ContentPage
     {
-        public API.User.UserInfo usertype;
-
-        public int id;
-
         Week weektype;
 
-        List<LessonItem> Shed;
+        List<LessonItem> Shed = new List<LessonItem>();
 
         public IEnumerable<IGrouping<string,LessonItem>> GroupedShed { get; private set; }
 
-        public ScheduleView(API.User.UserInfo utype, int idd)
+        public ScheduleView()
         {
             InitializeComponent();
-            Shed = new List<LessonItem>();
-            usertype = utype;
-            id = idd;
-            if (usertype == User.UserInfo.teacher)
+            Title = App.user.header;
+            if (App.user.Info == User.UserInfo.teacher)
             {
-                foreach (var LLC in TeacherMethods.RequestWeekSchedule(id))
+                foreach (var LLC in TeacherMethods.RequestWeekSchedule(App.user.teacherId))
                 {
                     var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
                     Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname, tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя", tol, LLC));
@@ -62,7 +58,7 @@ namespace mmcs_schedule_app
             }
             else
             {
-                foreach (var LLC in StudentMethods.RequestWeekSchedule(id))
+                foreach (var LLC in StudentMethods.RequestWeekSchedule(App.user.groupid))
                 {
                     var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
                     Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname, tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя", tol, LLC));
@@ -70,17 +66,21 @@ namespace mmcs_schedule_app
             }
             //Gets russian day names, possible to use CurrentInfo, but app has no localization, so no reason for that
             var DayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames;
-            GroupedShed = Shed.OrderBy(l => l.timeslot.day).ThenBy(l => l.timeslot.starth * 60 + l.timeslot.startm).ThenBy(l=> l.timeslot.week).
-                GroupBy(l => DayNames[(l.timeslot.day+1)%7]);
+            GroupedShed = Shed.OrderBy(l => l.timeslot.day).ThenBy(l => l.timeslot.starth * 60 + l.timeslot.startm).ThenBy(l => l.timeslot.week).
+                GroupBy(l => DayNames[(l.timeslot.day + 1) % 7]);
             weektype = CurrentSubject.RequestCurrentWeek();
+            //Must be at the end!!!
             BindingContext = this;
-
         }
-        private void OnExitClicked(object sender, EventArgs e)
+        protected override void OnAppearing()
         {
-            if(Navigation.NavigationStack.Count==0)
-                Navigation.InsertPageBefore(new MainPage() { _coldstart = false }, this);
-            Navigation.PopAsync();
+            
+        }
+        async private void OnExitClicked(object sender, EventArgs e)
+        {
+            //await Navigation.PushModalAsync(new MainPage());
+            Navigation.InsertPageBefore(new MainPage(), this);
+            await Navigation.PopAsync();
         }
     }
 }
