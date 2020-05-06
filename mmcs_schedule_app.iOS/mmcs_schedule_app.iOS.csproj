@@ -131,4 +131,7 @@
       <Name>mmcs_schedule_app</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <LinkDescription Include="LinkerFix.xml" />
+  </ItemGroup>
 </Project>
