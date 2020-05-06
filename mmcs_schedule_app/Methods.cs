@@ -173,22 +173,10 @@ namespace API
         /// <returns></returns>
         public static Week RequestCurrentWeek()
         {
-            string url = mmcs_schedule_app.App.host+"/APIv0/time/week/";
+            string url = mmcs_schedule_app.App.host+ "/APIv1/week/";
             string response = SchRequests.SchRequests.Request(url);
             Week week = SchRequests.SchRequests.DeSerializationObjFromStr<Week>(response);
             return week;
-        }
-        /// <summary>
-        /// Получаем информацию о предмете по его ID
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public static LessonInfo GetLessonInfo(string id)
-        {
-            string url = mmcs_schedule_app.App.host+"/APIv0/schedule/lesson/" + id;
-            string response = SchRequests.SchRequests.Request(url);
-            LessonInfo l = SchRequests.SchRequests.DeSerializationObjFromStr<LessonInfo>(response);
-            return l;
         }
     }
     public static class StudentMethods
@@ -413,7 +401,7 @@ namespace API
 
         public static Group[] GetGroupsList(int GradeId)
         {
-            string url = mmcs_schedule_app.App.host+"/APIv0/group/list/" + GradeId;
+            string url = mmcs_schedule_app.App.host+ "/APIv1/group/forGrade/" + GradeId;
             string response = SchRequests.SchRequests.Request(url);
             return SchRequests.SchRequests.DeSerializationFromStr<Group>(response);
         }
