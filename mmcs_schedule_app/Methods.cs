@@ -173,7 +173,7 @@ namespace API
         /// <returns></returns>
         public static Week RequestCurrentWeek()
         {
-            string url = mmcs_schedule_app.App.host+"APIv0/time/week/";
+            string url = mmcs_schedule_app.App.host+"/APIv0/time/week/";
             string response = SchRequests.SchRequests.Request(url);
             Week week = SchRequests.SchRequests.DeSerializationObjFromStr<Week>(response);
             return week;
@@ -185,7 +185,7 @@ namespace API
         /// <returns></returns>
         public static LessonInfo GetLessonInfo(string id)
         {
-            string url = mmcs_schedule_app.App.host+"APIv0/schedule/lesson/" + id;
+            string url = mmcs_schedule_app.App.host+"/APIv0/schedule/lesson/" + id;
             string response = SchRequests.SchRequests.Request(url);
             LessonInfo l = SchRequests.SchRequests.DeSerializationObjFromStr<LessonInfo>(response);
             return l;
@@ -230,7 +230,7 @@ namespace API
         /// <returns>Ordered by day of week and time week schedule</returns>
         public static List<(Lesson, List<Curriculum>)> RequestWeekSchedule(int groupID)
 		{
-			string url = mmcs_schedule_app.App.host+"APIv0/schedule/group/" + groupID;
+			string url = mmcs_schedule_app.App.host+"/APIv1/schedule/group/" + groupID;
 			string response = SchRequests.SchRequests.Request(url);
 			var schedule = SchRequests.SchRequests.DeSerializationObjFromStr<SchOfGroup>(response);
 			var res = new List<(Lesson, List<Curriculum>)>();
@@ -299,7 +299,7 @@ namespace API
         /// <returns></returns>
         public static Teacher[] GetTeachersList()
         {
-            string url = mmcs_schedule_app.App.host+"APIv0/teacher/list";
+            string url = mmcs_schedule_app.App.host+"/APIv1/teacher/list";
             string response = SchRequests.SchRequests.Request(url);
             return SchRequests.SchRequests.DeSerializationFromStr<Teacher>(response);
         }
@@ -340,7 +340,7 @@ namespace API
         /// <returns>Ordered by day of week and time week schedule</returns>
 		public static List<(Lesson, List<Curriculum>, List<TechGroup>)> RequestWeekSchedule(int teacherID)
         {
-            string url = mmcs_schedule_app.App.host+"APIv1/schedule/teacher/" + teacherID;
+            string url = mmcs_schedule_app.App.host+"/APIv1/schedule/teacher/" + teacherID;
             string response = SchRequests.SchRequests.Request(url);
             var schedule = SchRequests.SchRequests.DeSerializationObjFromStr<SchOfTeacher>(response);
             var res = new List<(Lesson, List<Curriculum>, List<TechGroup>)>();
@@ -406,14 +406,14 @@ namespace API
     {
         public static Grade[] GetGradesList()
         {
-            string url = mmcs_schedule_app.App.host+"APIv1/grade/list";
+            string url = mmcs_schedule_app.App.host+"/APIv1/grade/list";
             string response = SchRequests.SchRequests.Request(url);
             return SchRequests.SchRequests.DeSerializationFromStr<Grade>(response);
         }
 
         public static Group[] GetGroupsList(int GradeId)
         {
-            string url = mmcs_schedule_app.App.host+"APIv0/group/list/" + GradeId;
+            string url = mmcs_schedule_app.App.host+"/APIv0/group/list/" + GradeId;
             string response = SchRequests.SchRequests.Request(url);
             return SchRequests.SchRequests.DeSerializationFromStr<Group>(response);
         }
