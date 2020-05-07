@@ -76,10 +76,13 @@ namespace mmcs_schedule_app
                     var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
                     //Go thought list of Curriculums (present subj for timeslot)
                     foreach (var LC in LLC.Item2.ToLookup(lc => lc.subjectid).Select(coll => coll.First()))
+                    {
+                        var FilteredCurs = LLC.Item2.Where(c => c.subjectid == LC.subjectid).ToList();
                         Shed.Add(new LessonItem(tol.ToString(), LC.subjectname,
-                            tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя",LC.roomname,
-                            string.Join("\n", LLC.Item2.Select(c => $"• {c.teachername}\n  {c.roomname}")),
-                            tol, (LLC.Item1,LLC.Item2.Where(c =>c.subjectid==LC.subjectid).ToList())));
+                            tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя", LC.roomname,
+                            string.Join("\n", FilteredCurs.Select(c => $"• {c.teachername}\n  {c.roomname}")),
+                            tol, (LLC.Item1, FilteredCurs)));
+                    }
                 }
             }
             //Gets russian day names, possible to use CurrentInfo, but app has no localization, so no reason for that
