@@ -18,10 +18,10 @@ namespace mmcs_schedule_app
         public string room { get; set; }
         public string who { get; set; }
         public TimeOfLesson timeslot { get; set; }
-        (Lesson, List<Curriculum>, List<TechGroup>) TData;
-        (Lesson, List<Curriculum>) SData;
+        public (Lesson, List<Curriculum>, List<TechGroup>) TData { get; private set; }
+        public (Lesson, List<Curriculum>) SData { get; private set; }
 
-        public LessonItem(string tm,string nm,string wt,string r, TimeOfLesson ts, (Lesson, List<Curriculum>, List<TechGroup>) TD)
+    public LessonItem(string tm,string nm,string wt,string r, TimeOfLesson ts, (Lesson, List<Curriculum>, List<TechGroup>) TD)
         {
             time = tm;
             name = nm;
@@ -47,6 +47,8 @@ namespace mmcs_schedule_app
         List<LessonItem> Shed = new List<LessonItem>();
 
         public IEnumerable<IGrouping<string,LessonItem>> GroupedShed { get; private set; }
+
+        List<string> DayNames;
 
         public ScheduleView()
         {
@@ -76,7 +78,7 @@ namespace mmcs_schedule_app
                 }
             }
             //Gets russian day names, possible to use CurrentInfo, but app has no localization, so no reason for that
-            var DayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames;
+            DayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames.ToList();
             GroupedShed = Shed.OrderBy(l => l.timeslot.day).ThenBy(l => l.timeslot.starth * 60 + l.timeslot.startm).ThenBy(l => l.timeslot.week).
                 GroupBy(l => DayNames[(l.timeslot.day + 1) % 7]);
             weektype = CurrentSubject.RequestCurrentWeek();
@@ -92,6 +94,13 @@ namespace mmcs_schedule_app
             //await Navigation.PushModalAsync(new MainPage());
             Navigation.InsertPageBefore(new MainPage(), this);
             await Navigation.PopAsync();
+        }
+        //TODO: make popup intractive https://forums.xamarin.com/discussion/102828/best-way-to-create-non-full-screen-popup
+        void OnListItemTapped(object sender, ItemTappedEventArgs e)
+        {
+            ((ListView)sender).SelectedItem = null;
+            var item = (LessonItem)e.Item;
+            DisplayAlert(item.name, string.Join("\n", DayNames[(item.timeslot.day + 1) % 7],item.time.Replace("\n"," - "),item.who), "OK");
         }
     }
 }

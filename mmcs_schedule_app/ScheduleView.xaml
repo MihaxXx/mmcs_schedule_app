@@ -10,7 +10,9 @@
         <ListView ItemsSource="{Binding GroupedShed}"
                   GroupDisplayBinding="{Binding Key}"
                   IsGroupingEnabled="True"
-                  HasUnevenRows="True" >
+                  HasUnevenRows="True"
+                  SelectionMode="None"
+                  ItemTapped="OnListItemTapped">
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <ViewCell>
