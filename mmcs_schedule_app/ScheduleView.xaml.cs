@@ -21,21 +21,23 @@ namespace mmcs_schedule_app
         public (Lesson, List<Curriculum>, List<TechGroup>) TData { get; private set; }
         public (Lesson, List<Curriculum>) SData { get; private set; }
 
-    public LessonItem(string tm,string nm,string wt,string r, TimeOfLesson ts, (Lesson, List<Curriculum>, List<TechGroup>) TD)
+    public LessonItem(string tm,string nm,string wt,string r, string w, TimeOfLesson ts, (Lesson, List<Curriculum>, List<TechGroup>) TD)
         {
             time = tm;
             name = nm;
             weektypes = wt;
             room = r;
+            who = w;
             timeslot = ts;
             TData = TD;
         }
-        public LessonItem(string tm, string nm, string wt, string r, TimeOfLesson ts,  (Lesson, List<Curriculum>) SD)
+        public LessonItem(string tm, string nm, string wt, string r, string w, TimeOfLesson ts,  (Lesson, List<Curriculum>) SD)
         {
             time = tm;
             name = nm;
             weektypes = wt;
             room = r;
+            who = w;
             timeslot = ts;
             SData = SD;
         }
@@ -61,7 +63,9 @@ namespace mmcs_schedule_app
                     var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
                     Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname,
                         tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя",
-                        LLC.Item2.First().roomname,tol, LLC));
+                        LLC.Item2.First().roomname,
+                        string.Join("\n", LLC.Item3.Select(g => $"• {StuDegreeShort(g.degree)} {g.gradenum}.{g.groupnum}")),
+                        tol, LLC));
                 }
             }
             else
@@ -73,8 +77,9 @@ namespace mmcs_schedule_app
                     //Go thought list of Curriculums (present subj for timeslot)
                     foreach (var LC in LLC.Item2.ToLookup(lc => lc.subjectid).Select(coll => coll.First()))
                         Shed.Add(new LessonItem(tol.ToString(), LC.subjectname,
-                            tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя",LC.roomname, tol,
-                            (LLC.Item1,LLC.Item2.Where(c =>c.subjectid==LC.subjectid).ToList())));
+                            tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя",LC.roomname,
+                            string.Join("\n", LLC.Item2.Select(c => $"• {c.teachername}\n  {c.roomname}")),
+                            tol, (LLC.Item1,LLC.Item2.Where(c =>c.subjectid==LC.subjectid).ToList())));
                 }
             }
             //Gets russian day names, possible to use CurrentInfo, but app has no localization, so no reason for that
@@ -85,6 +90,19 @@ namespace mmcs_schedule_app
             //Must be at the end!!!
             BindingContext = this;
         }
+
+        public static string StuDegreeShort(string degree)
+        {
+            switch (degree)
+            {
+                case "bachelor": return "бак.";
+                case "master": return "маг.";
+                case "specialist": return "спец.";
+                case "postgraduate": return "асп.";
+                default: return "н/д";
+            }
+        }
+
         protected override void OnAppearing()
         {
             
@@ -100,7 +118,10 @@ namespace mmcs_schedule_app
         {
             ((ListView)sender).SelectedItem = null;
             var item = (LessonItem)e.Item;
-            DisplayAlert(item.name, string.Join("\n", DayNames[(item.timeslot.day + 1) % 7],item.time.Replace("\n"," - "),item.who), "OK");
+            List<string> info = new List<string>{ DayNames[(item.timeslot.day + 1) % 7], item.time.Replace("\n", " - "), item.who };
+            if (item.TData.Item1 != null)
+                info.Insert(2, "a." + item.room);
+            DisplayAlert(item.name, string.Join("\n\n", info), "OK");
         }
     }
 }
