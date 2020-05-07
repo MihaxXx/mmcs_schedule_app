@@ -14,13 +14,14 @@
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <ViewCell>
-                        <Grid Padding="10">
+                        <Grid Padding="0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Label Grid.RowSpan="2"
@@ -34,6 +35,10 @@
                                    Grid.Column="1"
                                    Text="{Binding weektypes}"
                                    FontAttributes="Italic"/>
+                            <Label Grid.RowSpan="2"
+                                   Grid.Column="2"
+                                   Text="{Binding room}"
+                                   FontAttributes="Bold"/>
                         </Grid>
                     </ViewCell>
                 </DataTemplate>

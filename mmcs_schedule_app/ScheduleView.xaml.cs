@@ -15,23 +15,27 @@ namespace mmcs_schedule_app
         public string time { get; set; }
         public string name { get; set; }
         public string weektypes { get; set; }
+        public string room { get; set; }
+        public string who { get; set; }
         public TimeOfLesson timeslot { get; set; }
         (Lesson, List<Curriculum>, List<TechGroup>) TData;
         (Lesson, List<Curriculum>) SData;
 
-        public LessonItem(string tm,string nm,string wt, TimeOfLesson ts, (Lesson, List<Curriculum>, List<TechGroup>) TD)
+        public LessonItem(string tm,string nm,string wt,string r, TimeOfLesson ts, (Lesson, List<Curriculum>, List<TechGroup>) TD)
         {
             time = tm;
             name = nm;
             weektypes = wt;
+            room = r;
             timeslot = ts;
             TData = TD;
         }
-        public LessonItem(string tm, string nm, string wt, TimeOfLesson ts,  (Lesson, List<Curriculum>) SD)
+        public LessonItem(string tm, string nm, string wt, string r, TimeOfLesson ts,  (Lesson, List<Curriculum>) SD)
         {
             time = tm;
             name = nm;
             weektypes = wt;
+            room = r;
             timeslot = ts;
             SData = SD;
         }
@@ -53,15 +57,22 @@ namespace mmcs_schedule_app
                 foreach (var LLC in TeacherMethods.RequestWeekSchedule(App.user.teacherId))
                 {
                     var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
-                    Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname, tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя", tol, LLC));
+                    Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname,
+                        tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя",
+                        LLC.Item2.First().roomname,tol, LLC));
                 }
             }
             else
             {
+                //Go thought list of lessons (present timeslots for group)
                 foreach (var LLC in StudentMethods.RequestWeekSchedule(App.user.groupid))
                 {
                     var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
-                    Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname, tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя", tol, LLC));
+                    //Go thought list of Curriculums (present subj for timeslot)
+                    foreach (var LC in LLC.Item2.ToLookup(lc => lc.subjectid).Select(coll => coll.First()))
+                        Shed.Add(new LessonItem(tol.ToString(), LC.subjectname,
+                            tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя",LC.roomname, tol,
+                            (LLC.Item1,LLC.Item2.Where(c =>c.subjectid==LC.subjectid).ToList())));
                 }
             }
             //Gets russian day names, possible to use CurrentInfo, but app has no localization, so no reason for that
