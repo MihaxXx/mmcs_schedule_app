@@ -1,14 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Newtonsoft.Json;
 using System.ComponentModel;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Microsoft.Maui.Controls.Compatibility;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui;
 
 namespace mmcs_schedule_app
 {
@@ -75,8 +67,9 @@ namespace mmcs_schedule_app
                     List_NmOrGr.Items.Add(t.name);
             }
             List_NmOrGr.SelectedIndex = -1;
-            List_NmOrGr.IsVisible = true;
-            List_Groups.IsVisible = false;
+            List_NmOrGr.IsEnabled = true;
+            List_Groups.SelectedIndex = -1;
+            List_Groups.IsEnabled = false;
             Ok_btn.IsEnabled = false;
         }
         private void List_NmOrGr_SelectedIndexChanged(object sender, EventArgs e)
@@ -87,17 +80,17 @@ namespace mmcs_schedule_app
             user.list1selID = picker.SelectedIndex;
             if (user.Info == API.User.UserInfo.teacher)
             {
-                List_Groups.IsVisible = false;
+                List_Groups.IsEnabled = false;
                 user.teacherId = Teachers.First(t => t.name == picker.Items[picker.SelectedIndex]).id;
-                Ok_btn.IsEnabled = true;                
+                Ok_btn.IsEnabled = true;
             }
             else
             {
-                switch(Grades[List_NmOrGr.SelectedIndex].degree)
+                switch (Grades[List_NmOrGr.SelectedIndex].degree)
                 {
                     case "bachelor": user.Info = API.User.UserInfo.bachelor; break;
-                    case "master": user.Info = API.User.UserInfo.master; break; 
-                    case "specialist": user.Info = API.User.UserInfo.bachelor; break; 
+                    case "master": user.Info = API.User.UserInfo.master; break;
+                    case "specialist": user.Info = API.User.UserInfo.bachelor; break;
                     case "postgraduate": user.Info = API.User.UserInfo.graduate; break;
                 }
                 user.course = Grades[List_NmOrGr.SelectedIndex].num;
@@ -108,7 +101,7 @@ namespace mmcs_schedule_app
                         Grades[i].Groups = API.GradeMethods.GetGroupsList(Grades[i].id).ToList();
                     }
 
-                    List_Groups.IsVisible = true;
+                    List_Groups.IsEnabled = true;
                     List_Groups.Items.Clear();
                     foreach (var g in Grades[List_NmOrGr.SelectedIndex].Groups)
                         List_Groups.Items.Add(g.name + " группа " + g.num);
@@ -143,7 +136,7 @@ namespace mmcs_schedule_app
             //await Navigation.PushAsync(new ScheduleView());
             Navigation.InsertPageBefore(new ScheduleView(), this);
             await Navigation.PopAsync();
-            
+
         }
 
         public static string StuDegreeShort(string degree)

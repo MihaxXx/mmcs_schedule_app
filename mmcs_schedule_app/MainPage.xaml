@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:d="http://schemas.microsoft.com/dotnet/2021/maui/design" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="mmcs_schedule_app.MainPage"
              Title="MMCS Schedule">
-    <StackLayout Margin="0,15,0,0"> <!-- Fix to make dist above 1st field equal to dist above all other -->
-        <Picker Title="Студент/Преподаватель" x:Name="Role" VerticalOptions="Start" SelectedIndexChanged="Role_SelectedIndexChanged" >
+    <StackLayout Spacing="10" Padding="10,0">
+        <Picker Title="Студент / Преподаватель" x:Name="Role" VerticalOptions="Start" SelectedIndexChanged="Role_SelectedIndexChanged" >
             <Picker.ItemsSource>
                 <x:Array Type="{x:Type x:String}">
                     <x:String>Студент</x:String>
@@ -10,17 +10,17 @@
                 </x:Array>
             </Picker.ItemsSource>
         </Picker>
-        <Picker Title="" x:Name="List_NmOrGr" IsVisible="False" VerticalOptions="Start" SelectedIndexChanged="List_NmOrGr_SelectedIndexChanged">
+        <Picker Title="Курс / ФИО" IsEnabled="False" x:Name="List_NmOrGr" VerticalOptions="Start" SelectedIndexChanged="List_NmOrGr_SelectedIndexChanged">
             <Picker.ItemsSource>
             </Picker.ItemsSource>
         </Picker>
         <Picker Title="Группа" x:Name="List_Groups" VerticalOptions="Start"
                 SelectedIndexChanged="List_Groups_SelectedIndexChanged"
-                IsVisible="false">
+                IsEnabled="False">
             <Picker.ItemsSource>
             </Picker.ItemsSource>
         </Picker>
         <Label Text="Error: No connection" x:Name="ErrorLabel" HorizontalOptions="Center"  IsVisible="False" IsEnabled="False"/>
-        <Button Text="OK" x:Name="Ok_btn" VerticalOptions="EndAndExpand" IsEnabled="False" Clicked="Ok_btnClicked"/>
+        <Button Text="OK" x:Name="Ok_btn" IsEnabled="False" Clicked="Ok_btnClicked"/>
     </StackLayout>
 </ContentPage>

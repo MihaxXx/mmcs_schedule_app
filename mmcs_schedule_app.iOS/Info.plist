@@ -37,7 +37,7 @@
 	<key>CFBundleIdentifier</key>
 	<string>ru.mihaxxx.mmcs-schedule-app</string>
 	<key>CFBundleDisplayName</key>
-	<string>Расписание мехмата ЮФУ</string>
+	<string>Расписание</string>
 	<key>CFBundleName</key>
 	<string>mmcs_schedule_app</string>
 	<key>MinimumOSVersion</key>

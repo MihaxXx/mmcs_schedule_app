@@ -29,7 +29,8 @@
                             <Label Grid.RowSpan="2"
                                    Grid.Column="0"
                                    Text="{Binding time}"
-                                   FontAttributes="Bold" />
+                                   FontAttributes="Bold"
+                                   Padding="5,0"/>
                             <Label Grid.Row="0"
                                    Grid.Column="1"
                                    Text="{Binding name}"/>
@@ -40,7 +41,8 @@
                             <Label Grid.RowSpan="2"
                                    Grid.Column="2"
                                    Text="{Binding room}"
-                                   FontAttributes="Bold"/>
+                                   FontAttributes="Bold"
+                                   Padding="5,0"/>
                         </Grid>
                     </ViewCell>
                 </DataTemplate>
@@ -48,7 +50,8 @@
             <ListView.GroupHeaderTemplate>
                 <DataTemplate>
                     <ViewCell>
-                        <Label Text="{Binding Key}" />
+                        <Label Text="{Binding Key}"
+                               Padding="5,0"/>
                     </ViewCell>
                 </DataTemplate>
             </ListView.GroupHeaderTemplate>
