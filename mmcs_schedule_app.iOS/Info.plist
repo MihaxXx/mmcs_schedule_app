@@ -41,6 +41,6 @@
 	<key>CFBundleName</key>
 	<string>mmcs_schedule_app</string>
 	<key>MinimumOSVersion</key>
-	<string>11.0</string>
+	<string>12.2</string>
 </dict>
 </plist>
