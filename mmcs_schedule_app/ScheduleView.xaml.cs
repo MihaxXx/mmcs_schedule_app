@@ -1,13 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-
-
-using API;
-using Microsoft.Maui.Controls.Compatibility;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui;
+﻿using API;
 
 namespace mmcs_schedule_app
 {
@@ -22,7 +13,7 @@ namespace mmcs_schedule_app
         public (Lesson, List<Curriculum>, List<TechGroup>) TData { get; private set; }
         public (Lesson, List<Curriculum>) SData { get; private set; }
 
-    public LessonItem(string tm,string nm,string wt,string r, string w, TimeOfLesson ts, (Lesson, List<Curriculum>, List<TechGroup>) TD)
+        public LessonItem(string tm, string nm, string wt, string r, string w, TimeOfLesson ts, (Lesson, List<Curriculum>, List<TechGroup>) TD)
         {
             time = tm;
             name = nm;
@@ -32,7 +23,7 @@ namespace mmcs_schedule_app
             timeslot = ts;
             TData = TD;
         }
-        public LessonItem(string tm, string nm, string wt, string r, string w, TimeOfLesson ts,  (Lesson, List<Curriculum>) SD)
+        public LessonItem(string tm, string nm, string wt, string r, string w, TimeOfLesson ts, (Lesson, List<Curriculum>) SD)
         {
             time = tm;
             name = nm;
@@ -49,7 +40,7 @@ namespace mmcs_schedule_app
 
         List<LessonItem> Shed = new List<LessonItem>();
 
-        public IEnumerable<IGrouping<string,LessonItem>> GroupedShed { get; private set; }
+        public IEnumerable<IGrouping<string, LessonItem>> GroupedShed { get; private set; }
 
         List<string> DayNames;
 
@@ -109,7 +100,7 @@ namespace mmcs_schedule_app
 
         protected override void OnAppearing()
         {
-            
+
         }
         async private void OnExitClicked(object sender, EventArgs e)
         {
@@ -122,10 +113,10 @@ namespace mmcs_schedule_app
         {
             ((ListView)sender).SelectedItem = null;
             var item = (LessonItem)e.Item;
-            List<string> info = new List<string>{ DayNames[(item.timeslot.day + 1) % 7], item.time.Replace("\n", " - "), item.who };
+            List<string> info = new List<string> { DayNames[(item.timeslot.day + 1) % 7], item.time.Replace("\n", " - "), item.who };
             if (item.TData.Item1 != null)
                 info.Insert(2, "a." + item.room);
-            DisplayAlert(item.name, string.Join("\n\n", info), "OK");
+            DisplayAlert(item.name, string.Join("\n\n", info), "ОК");
         }
     }
 }

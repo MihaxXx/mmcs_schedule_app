@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>net9.0</TargetFrameworks>
@@ -7,6 +7,16 @@
 		<RootNamespace>mmcs_schedule_app</RootNamespace>
 		<UseMaui>true</UseMaui>
 		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0|AnyCPU'">
+	  <ApplicationId>ru.mihaxxx.mmcs_schedule_app</ApplicationId>
+	  <ApplicationTitle>Расписание</ApplicationTitle>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0|AnyCPU'">
+	  <ApplicationId>ru.mihaxxx.mmcs_schedule_app</ApplicationId>
+	  <ApplicationTitle>Расписание</ApplicationTitle>
 	</PropertyGroup>
 
 	<ItemGroup>
