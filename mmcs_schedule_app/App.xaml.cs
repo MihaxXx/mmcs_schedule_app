@@ -16,15 +16,38 @@ namespace mmcs_schedule_app
         public App()
         {
             InitializeComponent();
-            if (_isLoggedIn = File.Exists(_fileName))
+
+            if (File.Exists(_fileName) && JsonConvert.DeserializeObject<API.User>(File.ReadAllText(_fileName, Encoding.UTF8)) is { } loggedInUser)
             {
-                user = JsonConvert.DeserializeObject<API.User>(File.ReadAllText(_fileName, Encoding.UTF8));
-                MainPage = new NavigationPage(new ScheduleView());
+                _isLoggedIn = true;
+                user = loggedInUser;
             }
-            else
-                MainPage = new NavigationPage(new MainPage());
         }
 
+        internal static Page GetStartPage()
+        {
+            NavigationPage page;
 
+            if (_isLoggedIn)
+            {
+                page = new NavigationPage(new ScheduleView());
+            }
+            else
+            {
+                page = new NavigationPage(new MainPage());
+            }
+
+            if (OperatingSystem.IsAndroid())
+            {
+                page.BarBackgroundColor = (Color)Current.Resources["Tertiary"];
+            }
+
+            return page;
+        }
+
+        protected override Window CreateWindow(IActivationState? activationState)
+        {
+            return new Window(GetStartPage());
+        }
     }
 }

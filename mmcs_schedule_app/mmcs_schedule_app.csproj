@@ -21,7 +21,7 @@
 	</ItemGroup>
 	
 	<ItemGroup>
-		<MauiSplashScreen Include="Resources\Splash\logo.svg" Color="#00000000" BaseSize="128,128" />
+		<MauiSplashScreen Include="Resources\Splash\logo.svg" Color="#00000000" BaseSize="285,358" />
 	</ItemGroup>
 
 	<ItemGroup>

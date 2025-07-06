@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>net9.0-ios</TargetFrameworks>
@@ -23,10 +23,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\mmcs_schedule_app\mmcs_schedule_app.csproj" />
-	</ItemGroup>
-	
-	<ItemGroup>
-		<BundleResource Include="Resources\LaunchScreenImage.png" />
 	</ItemGroup>
 
 </Project>
