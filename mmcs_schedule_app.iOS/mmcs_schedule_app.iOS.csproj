@@ -12,8 +12,8 @@
 
 	<PropertyGroup Condition="'$(TargetFramework)'=='net9.0-ios'">
 	  <ProvisioningType>manual</ProvisioningType>
-	  <CodesignKey>Apple Development: Created via API (77YD8MNH9R)</CodesignKey>
-	  <CodesignProvision>VS: WildCard Development</CodesignProvision>
+	  <CodesignKey>Apple Distribution: Ekaterina Dots (KM55VN3845)</CodesignKey>
+	  <CodesignProvision>mmcs-schedule-app</CodesignProvision>
 	</PropertyGroup>
 
 	<ItemGroup>
