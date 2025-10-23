@@ -22,12 +22,14 @@ namespace mmcs_schedule_app
         private readonly List<string> DayNames;
         private readonly ObservableCollection<TeacherInfo> teachers = new();
         private readonly Teacher[] allTeachers;
+        private readonly INavigation parentNavigation;
 
-        public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, List<Curriculum> curricula)
+        public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, List<Curriculum> curricula, INavigation parentNav)
         {
             InitializeComponent();
             
             DayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames.ToList();
+            parentNavigation = parentNav;
             
             // Load all teachers for ID lookup
             allTeachers = TeacherMethods.GetTeachersList();
@@ -71,12 +73,12 @@ namespace mmcs_schedule_app
             if (teacher == null)
                 return;
             
-            // Close current modal
+            // Close current modal first
             await Navigation.PopModalAsync();
             
-            // Navigate to teacher's schedule
+            // Navigate to teacher's schedule on the main navigation stack
             var scheduleView = new ScheduleView(User.UserInfo.teacher, selectedTeacher.TeacherId, teacher.name);
-            await Navigation.PushAsync(scheduleView);
+            await parentNavigation.PushAsync(scheduleView);
         }
 
         private async void OnCloseClicked(object sender, EventArgs e)

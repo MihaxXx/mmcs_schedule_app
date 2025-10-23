@@ -186,8 +186,8 @@ namespace mmcs_schedule_app
                 return;
             }
             
-            // Open modal popup with lesson details
-            var detailPage = new LessonDetailPage(item.name, item.timeslot, curricula);
+            // Open modal popup with lesson details, passing parent navigation
+            var detailPage = new LessonDetailPage(item.name, item.timeslot, curricula, Navigation);
             await Navigation.PushModalAsync(new NavigationPage(detailPage));
         }
     }
