@@ -2,12 +2,12 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="mmcs_schedule_app.ScheduleView">
     <ContentPage.ToolbarItems>
         <ToolbarItem 
-            Text="Неделя"       
+            IconImageSource="import_export.svg"       
             Order="Primary"
             Priority="0"
             Clicked="OnChangeWeekClicked"/>
         <ToolbarItem 
-            Text="Выход"
+            IconImageSource="exit_to_app.svg"
             Order="Primary"
             Priority="0"
             Clicked="OnExitClicked"/>
