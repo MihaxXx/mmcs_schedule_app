@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" 
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" 
+             x:Class="mmcs_schedule_app.LessonDetailPage">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+            <!-- Discipline name -->
+            <Label x:Name="DisciplineLabel" 
+                   FontSize="20" 
+                   FontAttributes="Bold"
+                   HorizontalTextAlignment="Center"/>
+            
+            <!-- Weekday -->
+            <Label x:Name="WeekdayLabel" 
+                   FontSize="16"
+                   HorizontalTextAlignment="Center"/>
+            
+            <!-- Timeslot -->
+            <Label x:Name="TimeslotLabel" 
+                   FontSize="16"
+                   HorizontalTextAlignment="Center"/>
+            
+            <!-- Week type (верхняя/нижняя) -->
+            <Label x:Name="WeekTypeLabel" 
+                   FontSize="14"
+                   FontAttributes="Italic"
+                   HorizontalTextAlignment="Center"/>
+            
+            <!-- Teachers list -->
+            <Label Text="Преподаватели:" 
+                   FontSize="16" 
+                   FontAttributes="Bold"
+                   Margin="0,10,0,0"/>
+            
+            <CollectionView x:Name="TeachersCollection"
+                           SelectionMode="Single"
+                           SelectionChanged="OnTeacherSelected">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Padding="10" 
+                               Margin="0,5,0,5"
+                               BorderColor="LightGray"
+                               CornerRadius="5"
+                               HasShadow="True">
+                            <VerticalStackLayout Spacing="5">
+                                <Label Text="{Binding TeacherName}" 
+                                       FontSize="16"
+                                       TextColor="Blue"
+                                       TextDecorations="Underline"/>
+                                <Label Text="{Binding RoomName}" 
+                                       FontSize="14"
+                                       TextColor="Gray"/>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            
+            <Button Text="Закрыть" 
+                    Clicked="OnCloseClicked"
+                    Margin="0,20,0,0"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
