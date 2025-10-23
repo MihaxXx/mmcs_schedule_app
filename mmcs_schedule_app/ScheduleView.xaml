@@ -2,15 +2,21 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="mmcs_schedule_app.ScheduleView">
     <ContentPage.ToolbarItems>
         <ToolbarItem 
-            IconImageSource="import_export.svg"       
             Order="Primary"
             Priority="0"
-            Clicked="OnChangeWeekClicked"/>
+            Clicked="OnChangeWeekClicked">
+            <ToolbarItem.IconImageSource>
+                <FileImageSource File="{AppThemeBinding Light=import_export.svg, Dark=import_export_dark.svg}"/>
+            </ToolbarItem.IconImageSource>
+        </ToolbarItem>
         <ToolbarItem 
-            IconImageSource="exit_to_app.svg"
             Order="Primary"
             Priority="0"
-            Clicked="OnExitClicked"/>
+            Clicked="OnExitClicked">
+            <ToolbarItem.IconImageSource>
+                <FileImageSource File="{AppThemeBinding Light=exit_to_app.svg, Dark=exit_to_app_dark.svg}"/>
+            </ToolbarItem.IconImageSource>
+        </ToolbarItem>
     </ContentPage.ToolbarItems>
     <StackLayout>
         <ListView ItemsSource="{Binding GroupedShed}"
