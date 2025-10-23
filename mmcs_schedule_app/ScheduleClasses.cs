@@ -1,22 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.Serialization; 
+﻿using System.Runtime.Serialization;
 
 namespace API
 {
-	/// <summary>
-	/// Занятие
-	/// </summary>
+    /// <summary>
+    /// Занятие
+    /// </summary>
     [DataContract]
     public class Lesson
     {
         [DataMember]
         // Индентификатор
-        public int id { get; set; } 
+        public int id { get; set; }
 
         [DataMember]
         // Другой идентификатор
-        public int uberid { get; set; } 
+        public int uberid { get; set; }
 
         [DataMember]
         // Количество предметов
@@ -26,78 +24,78 @@ namespace API
         // Время предмета
         public string timeslot { get; set; }
 
-		public override string ToString()
-		{
-			return $"{id} {uberid} {subcount} {timeslot}";
-		}
-	} 
-	/// <summary>
-	/// Данные о занятии
-	/// </summary>
-    [DataContract] 
+        public override string ToString()
+        {
+            return $"{id} {uberid} {subcount} {timeslot}";
+        }
+    }
+    /// <summary>
+    /// Данные о занятии
+    /// </summary>
+    [DataContract]
     public class Curriculum
     {
         [DataMember]
         // Идентификатор
-        public int id { get; set; } 
+        public int id { get; set; }
 
         [DataMember]
         // Идентификатор предмета
-        public int lessonid { get; set; } 
+        public int lessonid { get; set; }
 
         [DataMember]
         // Число предметов
-        public int subnum { get; set; } 
+        public int subnum { get; set; }
 
         [DataMember]
         // Идентификатор предмета
-        public int subjectid { get; set; } 
+        public int subjectid { get; set; }
 
-        [DataMember] 
+        [DataMember]
         // Имя предмеита
-        public string subjectname { get; set; } 
+        public string subjectname { get; set; }
 
-        [DataMember] 
+        [DataMember]
         // Аббревиатура предмета
-        public string subjectabbr { get; set; } 
+        public string subjectabbr { get; set; }
 
         [DataMember]
         // Идентификатор преподавателя
-        public int teacherid { get; set; } 
+        public int teacherid { get; set; }
 
         [DataMember]
         // ФИО преподавателя
-        public string teachername { get; set; } 
+        public string teachername { get; set; }
 
         [DataMember]
         // Ученая степень преподавателя
         public string teacherdegree { get; set; }
-         
+
         [DataMember]
         // Идентификатор аудитории
-        public int roomid { get; set; } 
+        public int roomid { get; set; }
 
         [DataMember]
         // Наименование аудитории
         public string roomname { get; set; }
 
-		public override string ToString()
-		{
-			return $"{subjectname}, преп. {teachername}, ауд. {roomname}";
-		}
-	}
+        public override string ToString()
+        {
+            return $"{subjectname}, преп. {teachername}, ауд. {roomname}";
+        }
+    }
 
-	/// <summary>
-	/// Расписание группы
-	/// </summary>
-	[DataContract] 
+    /// <summary>
+    /// Расписание группы
+    /// </summary>
+    [DataContract]
     public class SchOfGroup
     {
-        [DataMember] 
+        [DataMember]
         // Список предметов
-        public List<Lesson> lessons { get; set; } 
+        public List<Lesson> lessons { get; set; }
 
-        [DataMember] 
+        [DataMember]
         // Список расписаний 
         public List<Curriculum> curricula { get; set; }
     }
@@ -119,86 +117,132 @@ namespace API
         //список групп
         public List<TechGroup> groups { get; set; }
     }
-	/// <summary>
-	/// Группа
-	/// </summary>
-	[DataContract]
-	public class Group
-	{
-		[DataMember]
-		// Идентификатор группы
-		public int id { get; set; }
+    /// <summary>
+    /// Группа
+    /// </summary>
+    [DataContract]
+    public class Group
+    {
+        [DataMember]
+        // Идентификатор группы
+        public int id { get; set; }
 
-		[DataMember]
-		// Имя группы
-		public string name { get; set; }
+        [DataMember]
+        // Имя группы
+        public string name { get; set; }
 
-		[DataMember]
-		// Номер группы
-		public int num { get; set; }
+        [DataMember]
+        // Номер группы
+        public int num { get; set; }
 
-		[DataMember]
-		// Уровень группы
-		public int gradeid { get; set; }
-	}
+        [DataMember]
+        // Уровень группы
+        public int gradeid { get; set; }
+    }
 
-	/// <summary>
-	/// Неделя
-	/// </summary>
-	[DataContract]
-	public class Week
-	{
-		// Текущая неделя 0 - верхняя, 1 - нижняя 
-		[DataMember]
-		public int type { get; set; }
+    /// <summary>
+    /// Тип недели
+    /// </summary>
+    [DataContract]
+    public enum WeekType
+    {
+        /// <summary>
+        /// Полная неделя
+        /// </summary>
+        [EnumMember]
+        Full = -1,
 
-		public override string ToString()
-		{
-				return type == 0 ? "верхняя" : "нижняя";
-		}
-		public int reversedtype() => type == 0 ? 1 : 0;
-	}
+        /// <summary>
+        /// Верхняя неделя
+        /// </summary>
+        [EnumMember]
+        Upper = 0,
+
+        /// <summary>
+        /// Нижняя неделя
+        /// </summary>
+        [EnumMember]
+        Lower = 1,
+
+        /// <summary>
+        /// Текущая неделя
+        /// </summary>
+        [EnumMember]
+        Current = 2,
+    }
+
+    /// <summary>
+    /// Неделя
+    /// </summary>
+    [DataContract]
+    public class Week
+    {
+        [DataMember]
+        public WeekType week { get; set; }
+
+        public override string ToString()
+        {
+            return week switch
+            {
+                WeekType.Upper => "верхняя",
+                WeekType.Lower => "нижняя",
+                WeekType.Current => "текущая",
+                WeekType.Full => "полная",
+                _ => week.ToString()
+            };
+        }
+
+        public WeekType reversedWeek()
+        {
+            return week switch
+            {
+                WeekType.Upper => WeekType.Lower,
+                WeekType.Lower => WeekType.Upper,
+                _ => week
+            };
+        }
+    }
 
 
-	/// <summary>
-	/// Класс дисциплины
-	/// </summary>
-	[DataContract]
-	public class Subject
-	{
-		// Индентификатор
-		[DataMember]
-		public int id { get; set; }
-		// Наименование предмета
-		[DataMember]
-		public string name { get; set; }
-		// Сокращенное наименование предмета
-		[DataMember]
-		public string abbr { get; set; }
-		// Конструктор класса
-		Subject(int id, string name, string abbr)
-		{
-			this.id = id;
-			this.name = name;
-			this.abbr = abbr;
-		}
-		// Конструктор по умолчанию
-		Subject() { }
-	}
-	/// <summary>
-	/// Информация о конкретном предмете по его номеру ID
-	/// </summary>
-	[DataContract]
-	public class LessonInfo
-	{
-		[DataMember]
-		// Список предметов
-		public Lesson lesson { get; set; }
+    /// <summary>
+    /// Класс дисциплины
+    /// </summary>
+    [DataContract]
+    public class Subject
+    {
+        // Индентификатор
+        [DataMember]
+        public int id { get; set; }
+        // Наименование предмета
+        [DataMember]
+        public string name { get; set; }
+        // Сокращенное наименование предмета
+        [DataMember]
+        public string abbr { get; set; }
+        // Конструктор класса
+        Subject(int id, string name, string abbr)
+        {
+            this.id = id;
+            this.name = name;
+            this.abbr = abbr;
+        }
+        // Конструктор по умолчанию
+        Subject() { }
+    }
+    /// <summary>
+    /// Информация о конкретном предмете по его номеру ID
+    /// </summary>
+    [DataContract]
+    public class LessonInfo
+    {
+        [DataMember]
+        // Список предметов
+        public Lesson lesson { get; set; }
 
-		[DataMember]
-		// Список расписаний 
-		public Curriculum curricula { get; set; }
-	}
+        [DataMember]
+        // Список расписаний 
+        public Curriculum curricula { get; set; }
+    }
 
     /// <summary>
     /// Преподаватель (для списка преподов)
@@ -270,31 +314,31 @@ namespace API
             return $"{id}, {degree}";
         }
     }
-	[DataContract]
-	/// <summary>
-	/// Класс группы 
-	/// </summary>
-	public class TechGroup
-	{
-		[DataMember]
-		public int uberid { get; set; }
+    [DataContract]
+    /// <summary>
+    /// Класс группы 
+    /// </summary>
+    public class TechGroup
+    {
+        [DataMember]
+        public int uberid { get; set; }
 
-		[DataMember]
-		public int groupnum { get; set; }
+        [DataMember]
+        public int groupnum { get; set; }
 
-		[DataMember]
-		public int gradenum { get; set; }
+        [DataMember]
+        public int gradenum { get; set; }
 
-		[DataMember]
-		public string degree { get; set; }
+        [DataMember]
+        public string degree { get; set; }
 
-		[DataMember]
-		public string name { get; set; }
+        [DataMember]
+        public string name { get; set; }
 
-		public override string ToString()
-		{
-			return $"{uberid}, {groupnum}, {gradenum}, {degree}, {name}";
-		}
-	}
+        public override string ToString()
+        {
+            return $"{uberid}, {groupnum}, {gradenum}, {degree}, {name}";
+        }
+    }
 
 }

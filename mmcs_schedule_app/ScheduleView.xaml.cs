@@ -1,4 +1,5 @@
 ﻿using API;
+using System.Collections.ObjectModel;
 
 namespace mmcs_schedule_app
 {
@@ -36,11 +37,13 @@ namespace mmcs_schedule_app
     }
     public partial class ScheduleView : ContentPage
     {
-        Week weektype;
+        Week currentWeek;
+
+        Week selectedWeek = new Week() { week = (WeekType)2 };
 
         List<LessonItem> Shed = new List<LessonItem>();
 
-        public IEnumerable<IGrouping<string, LessonItem>> GroupedShed { get; private set; }
+        public ObservableCollection<IGrouping<string, LessonItem>> GroupedShed { get; private set; } = [];
 
         List<string> DayNames;
 
@@ -79,11 +82,33 @@ namespace mmcs_schedule_app
             }
             //Gets russian day names, possible to use CurrentInfo, but app has no localization, so no reason for that
             DayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames.ToList();
-            GroupedShed = Shed.OrderBy(l => l.timeslot.day).ThenBy(l => l.timeslot.starth * 60 + l.timeslot.startm).ThenBy(l => l.timeslot.week).
-                GroupBy(l => DayNames[(l.timeslot.day + 1) % 7]);
-            weektype = CurrentSubject.RequestCurrentWeek();
+            currentWeek = CurrentSubject.RequestCurrentWeek();
+
+            UpdateGroupedShed();
+
             //Must be at the end!!!
             BindingContext = this;
+        }
+
+        private void UpdateGroupedShed()
+        {
+            GroupedShed.Clear();
+
+            foreach (var lesson in Shed
+                .Where(l => IsOnSelectedWeek(l.timeslot.week))
+                .OrderBy(l => l.timeslot.day).ThenBy(l => l.timeslot.starth * 60 + l.timeslot.startm).ThenBy(l => l.timeslot.week)
+                .GroupBy(l => DayNames[(l.timeslot.day + 1) % 7]))
+            {
+                GroupedShed.Add(lesson);
+            }
+        }
+
+        private bool IsOnSelectedWeek(int leesonWeek)
+        {
+            return selectedWeek.week == WeekType.Full
+                || leesonWeek == -1
+                || (selectedWeek.week == WeekType.Current && leesonWeek == (int)currentWeek.week)
+                || (selectedWeek.week != WeekType.Current && leesonWeek == (int)selectedWeek.week);
         }
 
         public static string StuDegreeShort(string degree)
@@ -108,6 +133,26 @@ namespace mmcs_schedule_app
             Navigation.InsertPageBefore(new MainPage(), this);
             await Navigation.PopAsync();
         }
+
+        private async void OnChangeWeekClicked(object sender, EventArgs e)
+        {
+            string action = await DisplayActionSheet("Выберите тип недели", "Отмена", null, ["Текущая неделя", "Только верхняя", "Только нижняя", "Полное расписание"]);
+
+            if (action != null && action != "Отмена")
+            {
+                selectedWeek.week = action switch
+                {
+                    "Текущая неделя" => WeekType.Current,
+                    "Только верхняя" => WeekType.Upper,
+                    "Только нижняя" => WeekType.Lower,
+                    "Полное расписание" => WeekType.Full,
+                    _ => WeekType.Current,
+                };
+
+                UpdateGroupedShed();
+            }
+        }
+
         //TODO: make popup intractive https://forums.xamarin.com/discussion/102828/best-way-to-create-non-full-screen-popup
         void OnListItemTapped(object sender, ItemTappedEventArgs e)
         {
