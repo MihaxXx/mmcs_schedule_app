@@ -37,11 +37,6 @@ namespace mmcs_schedule_app
                 page = new NavigationPage(new MainPage());
             }
 
-            if (OperatingSystem.IsAndroid())
-            {
-                page.BarBackgroundColor = (Color)Current.Resources["Tertiary"];
-            }
-
             return page;
         }
 
