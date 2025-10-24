@@ -5,8 +5,8 @@
              BackgroundColor="Transparent">
     <Grid>
         <!-- Semi-transparent background -->
-        <BoxView Color="Black" 
-                 Opacity="0.5">
+        <BoxView 
+            BackgroundColor="Transparent">
             <BoxView.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnBackgroundTapped"/>
             </BoxView.GestureRecognizers>
@@ -16,7 +16,7 @@
         <Border VerticalOptions="End"
                 Margin="0"
                 Padding="0"
-                StrokeThickness="0"
+                StrokeThickness="1"
                 BackgroundColor="{AppThemeBinding Light=#E6FFFFFF, Dark=#E61E1E1E}">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="20,20,0,0"/>
