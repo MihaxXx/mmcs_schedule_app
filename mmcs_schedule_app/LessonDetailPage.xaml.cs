@@ -17,13 +17,28 @@ namespace mmcs_schedule_app
         }
     }
 
+    public class GroupInfo
+    {
+        public string GroupName { get; set; }
+        public string GroupDetails { get; set; }
+        public int GroupId { get; set; }
+
+        public GroupInfo(string groupName, string groupDetails, int groupId)
+        {
+            GroupName = groupName;
+            GroupDetails = groupDetails;
+            GroupId = groupId;
+        }
+    }
+
     public partial class LessonDetailPage : ContentPage
     {
         private readonly List<string> DayNames;
-        private readonly ObservableCollection<TeacherInfo> teachers = new();
-        private readonly Teacher[] allTeachers;
         private readonly INavigation parentNavigation;
+        private readonly Teacher[] allTeachers;
+        private readonly Grade[] allGrades;
 
+        // Constructor for student schedule (shows teachers)
         public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, List<Curriculum> curricula, INavigation parentNav)
         {
             InitializeComponent();
@@ -34,6 +49,68 @@ namespace mmcs_schedule_app
             // Load all teachers for ID lookup
             allTeachers = TeacherMethods.GetTeachersList();
             
+            SetupCommonInfo(disciplineName, timeslot);
+            
+            // Show teachers
+            var teachersLabel = new Label
+            {
+                Text = "Преподаватели:",
+                FontSize = 16,
+                FontAttributes = FontAttributes.Bold,
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+            TeachersStackLayout.Children.Add(teachersLabel);
+            
+            // Populate teachers list with clickable labels
+            foreach (var curriculum in curricula)
+            {
+                var teacherBorder = CreateClickableItem(
+                    curriculum.teachername,
+                    $"ауд. {curriculum.roomname}",
+                    async () => await OnTeacherTapped(curriculum.teacherid)
+                );
+                TeachersStackLayout.Children.Add(teacherBorder);
+            }
+        }
+
+        // Constructor for teacher schedule (shows groups)
+        public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, List<TechGroup> groups, string roomName, INavigation parentNav)
+        {
+            InitializeComponent();
+            
+            DayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames.ToList();
+            parentNavigation = parentNav;
+            
+            // Load all grades for group lookup
+            allGrades = GradeMethods.GetGradesList();
+            
+            SetupCommonInfo(disciplineName, timeslot);
+            
+            // Show groups
+            var groupsLabel = new Label
+            {
+                Text = "Группы:",
+                FontSize = 16,
+                FontAttributes = FontAttributes.Bold,
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+            TeachersStackLayout.Children.Add(groupsLabel);
+            
+            // Populate groups list with clickable labels
+            foreach (var techGroup in groups)
+            {
+                string groupDisplay = $"{StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
+                var groupBorder = CreateClickableItem(
+                    groupDisplay,
+                    $"ауд. {roomName}",
+                    async () => await OnGroupTapped(techGroup)
+                );
+                TeachersStackLayout.Children.Add(groupBorder);
+            }
+        }
+
+        private void SetupCommonInfo(string disciplineName, TimeOfLesson timeslot)
+        {
             // Set discipline name
             DisciplineLabel.Text = disciplineName;
             Title = disciplineName;
@@ -46,53 +123,49 @@ namespace mmcs_schedule_app
             
             // Set week type
             WeekTypeLabel.Text = timeslot.week == -1 ? "" : timeslot.week == 0 ? "верхняя неделя" : "нижняя неделя";
-            
-            // Populate teachers list with clickable labels
-            foreach (var curriculum in curricula)
+        }
+
+        private Border CreateClickableItem(string mainText, string subText, Func<Task> onTapped)
+        {
+            var border = new Border
             {
-                teachers.Add(new TeacherInfo(curriculum.teachername, $"ауд. {curriculum.roomname}", curriculum.teacherid));
-                
-                // Create a clickable teacher item
-                var teacherBorder = new Border
-                {
-                    Padding = 10,
-                    Margin = new Thickness(0, 0, 0, 5),
-                    Stroke = Colors.Transparent,
-                    BackgroundColor = Colors.Transparent,
-                    StrokeThickness = 0
-                };
-                
-                var stackLayout = new VerticalStackLayout
-                {
-                    Spacing = 2
-                };
-                
-                var nameLabel = new Label
-                {
-                    Text = curriculum.teachername,
-                    FontSize = 16,
-                    TextColor = Colors.Blue,
-                    TextDecorations = TextDecorations.Underline
-                };
-                
-                var roomLabel = new Label
-                {
-                    Text = $"ауд. {curriculum.roomname}",
-                    FontSize = 14,
-                    TextColor = Colors.Gray
-                };
-                
-                stackLayout.Children.Add(nameLabel);
-                stackLayout.Children.Add(roomLabel);
-                teacherBorder.Content = stackLayout;
-                
-                // Add tap gesture
-                var tapGesture = new TapGestureRecognizer();
-                tapGesture.Tapped += async (s, e) => await OnTeacherTapped(curriculum.teacherid);
-                teacherBorder.GestureRecognizers.Add(tapGesture);
-                
-                TeachersStackLayout.Children.Add(teacherBorder);
-            }
+                Padding = 10,
+                Margin = new Thickness(0, 0, 0, 5),
+                Stroke = Colors.Transparent,
+                BackgroundColor = Colors.Transparent,
+                StrokeThickness = 0
+            };
+            
+            var stackLayout = new VerticalStackLayout
+            {
+                Spacing = 2
+            };
+            
+            var mainLabel = new Label
+            {
+                Text = mainText,
+                FontSize = 16,
+                TextColor = Colors.Blue,
+                TextDecorations = TextDecorations.Underline
+            };
+            
+            var subLabel = new Label
+            {
+                Text = subText,
+                FontSize = 14,
+                TextColor = Colors.Gray
+            };
+            
+            stackLayout.Children.Add(mainLabel);
+            stackLayout.Children.Add(subLabel);
+            border.Content = stackLayout;
+            
+            // Add tap gesture
+            var tapGesture = new TapGestureRecognizer();
+            tapGesture.Tapped += async (s, e) => await onTapped();
+            border.GestureRecognizers.Add(tapGesture);
+            
+            return border;
         }
 
         private async Task OnTeacherTapped(int teacherId)
@@ -108,6 +181,52 @@ namespace mmcs_schedule_app
             // Navigate to teacher's schedule on the main navigation stack
             var scheduleView = new ScheduleView(User.UserInfo.teacher, teacherId, teacher.name);
             await parentNavigation.PushAsync(scheduleView);
+        }
+
+        private async Task OnGroupTapped(TechGroup techGroup)
+        {
+            // Find the matching group by looking up grades
+            var grade = allGrades.FirstOrDefault(g => g.num == techGroup.gradenum && g.degree == techGroup.degree);
+            if (grade == null)
+                return;
+            
+            // Load groups for this grade
+            var groups = GradeMethods.GetGroupsList(grade.id);
+            var group = groups.FirstOrDefault(g => g.num == techGroup.groupnum && g.name == techGroup.name);
+            if (group == null)
+                return;
+            
+            // Close current modal first
+            await Navigation.PopModalAsync();
+            
+            // Determine user info based on degree
+            User.UserInfo userInfo = techGroup.degree switch
+            {
+                "bachelor" => User.UserInfo.bachelor,
+                "master" => User.UserInfo.master,
+                "specialist" => User.UserInfo.bachelor,
+                "postgraduate" => User.UserInfo.graduate,
+                _ => User.UserInfo.bachelor
+            };
+            
+            // Create header like in MainPage
+            string header = $"{StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
+            
+            // Navigate to group's schedule on the main navigation stack
+            var scheduleView = new ScheduleView(userInfo, group.id, header);
+            await parentNavigation.PushAsync(scheduleView);
+        }
+
+        private static string StuDegreeShort(string degree)
+        {
+            return degree switch
+            {
+                "bachelor" => "Бак.",
+                "master" => "Маг.",
+                "specialist" => "Спец.",
+                "postgraduate" => "Асп.",
+                _ => "н/д"
+            };
         }
 
         private async void OnBackgroundTapped(object sender, EventArgs e)

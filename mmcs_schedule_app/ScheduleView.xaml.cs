@@ -171,23 +171,24 @@ namespace mmcs_schedule_app
             ((ListView)sender).SelectedItem = null;
             var item = (LessonItem)e.Item;
             
-            // Get the list of curricula
-            List<Curriculum> curricula;
+            // Open modal popup with lesson details, passing parent navigation
+            LessonDetailPage detailPage;
+            
             if (userInfo == User.UserInfo.teacher && item.TData.Item1 != null)
             {
-                curricula = item.TData.Item2;
+                // Teacher schedule - show groups
+                detailPage = new LessonDetailPage(item.name, item.timeslot, item.TData.Item3, item.room, Navigation);
             }
             else if (userInfo != User.UserInfo.teacher && item.SData.Item1 != null)
             {
-                curricula = item.SData.Item2;
+                // Student schedule - show teachers
+                detailPage = new LessonDetailPage(item.name, item.timeslot, item.SData.Item2, Navigation);
             }
             else
             {
                 return;
             }
             
-            // Open modal popup with lesson details, passing parent navigation
-            var detailPage = new LessonDetailPage(item.name, item.timeslot, curricula, Navigation);
             await Navigation.PushModalAsync(detailPage);
         }
     }
