@@ -115,24 +115,37 @@ namespace mmcs_schedule_app
         {
             var border = new Border
             {
-                Padding = 10,
-                Margin = new Thickness(0, 0, 0, 5),
+                Padding = new Thickness(5, 5, 5, 5),
+                Margin = new Thickness(0, 0, 0, 0),
                 Stroke = Colors.Transparent,
                 BackgroundColor = Colors.Transparent,
                 StrokeThickness = 0
             };
             
-            var stackLayout = new VerticalStackLayout
+            var horizontalStack = new HorizontalStackLayout
             {
-                Spacing = 2
+                Spacing = 8
+            };
+            
+            // Bullet point
+            var bulletLabel = new Label
+            {
+                Text = "•",
+                FontSize = 16,
+                VerticalOptions = LayoutOptions.Start,
+                Margin = new Thickness(0, 0, 0, 0)
+            };
+            
+            var verticalStack = new VerticalStackLayout
+            {
+                Spacing = 2,
+                HorizontalOptions = LayoutOptions.FillAndExpand
             };
             
             var mainLabel = new Label
             {
                 Text = mainText,
-                FontSize = 16,
-                TextColor = Colors.Blue,
-                TextDecorations = TextDecorations.Underline
+                FontSize = 16
             };
             
             var subLabel = new Label
@@ -142,9 +155,13 @@ namespace mmcs_schedule_app
                 TextColor = Colors.Gray
             };
             
-            stackLayout.Children.Add(mainLabel);
-            stackLayout.Children.Add(subLabel);
-            border.Content = stackLayout;
+            verticalStack.Children.Add(mainLabel);
+            verticalStack.Children.Add(subLabel);
+            
+            horizontalStack.Children.Add(bulletLabel);
+            horizontalStack.Children.Add(verticalStack);
+            
+            border.Content = horizontalStack;
             
             // Add tap gesture
             var tapGesture = new TapGestureRecognizer();
@@ -216,6 +233,11 @@ namespace mmcs_schedule_app
         }
 
         private async void OnBackgroundTapped(object sender, EventArgs e)
+        {
+            await Navigation.PopModalAsync();
+        }
+
+        private async void OnSwipeDown(object sender, SwipedEventArgs e)
         {
             await Navigation.PopModalAsync();
         }
