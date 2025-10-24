@@ -13,12 +13,14 @@
         </BoxView>
         
         <!-- Popup content -->
-        <Frame VerticalOptions="End"
-               Margin="0"
-               Padding="0"
-               CornerRadius="20"
-               HasShadow="True"
-               BackgroundColor="{AppThemeBinding Light=#F5FFFFFF, Dark=#F51E1E1E}">
+        <Border VerticalOptions="End"
+                Margin="0"
+                Padding="0"
+                StrokeThickness="0"
+                BackgroundColor="{AppThemeBinding Light=#E6FFFFFF, Dark=#E61E1E1E}">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="20,20,0,0"/>
+            </Border.StrokeShape>
             <VerticalStackLayout Spacing="0">
                 <!-- Handle bar -->
                 <BoxView HeightRequest="4"
@@ -52,12 +54,18 @@
                                FontAttributes="Italic"
                                HorizontalTextAlignment="Center"/>
                         
+                        <!-- Teachers/Groups label -->
+                        <Label x:Name="ListLabel"
+                               FontSize="16" 
+                               FontAttributes="Bold"
+                               Margin="0,10,0,0"/>
+                        
                         <!-- Teachers/Groups list container -->
                         <VerticalStackLayout x:Name="TeachersStackLayout"
                                             Spacing="10"/>
                     </VerticalStackLayout>
                 </ScrollView>
             </VerticalStackLayout>
-        </Frame>
+        </Border>
     </Grid>
 </ContentPage>

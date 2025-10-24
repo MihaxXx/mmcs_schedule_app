@@ -51,15 +51,8 @@ namespace mmcs_schedule_app
             
             SetupCommonInfo(disciplineName, timeslot);
             
-            // Show teachers
-            var teachersLabel = new Label
-            {
-                Text = "Преподаватели:",
-                FontSize = 16,
-                FontAttributes = FontAttributes.Bold,
-                Margin = new Thickness(0, 10, 0, 0)
-            };
-            TeachersStackLayout.Children.Add(teachersLabel);
+            // Set label for teachers
+            ListLabel.Text = "Преподаватели:";
             
             // Populate teachers list with clickable labels
             foreach (var curriculum in curricula)
@@ -86,15 +79,8 @@ namespace mmcs_schedule_app
             
             SetupCommonInfo(disciplineName, timeslot);
             
-            // Show groups
-            var groupsLabel = new Label
-            {
-                Text = "Группы:",
-                FontSize = 16,
-                FontAttributes = FontAttributes.Bold,
-                Margin = new Thickness(0, 10, 0, 0)
-            };
-            TeachersStackLayout.Children.Add(groupsLabel);
+            // Set label for groups
+            ListLabel.Text = "Группы:";
             
             // Populate groups list with clickable labels
             foreach (var techGroup in groups)
