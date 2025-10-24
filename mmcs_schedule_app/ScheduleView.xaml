@@ -6,7 +6,7 @@
             Priority="0"
             Clicked="OnChangeWeekClicked">
             <ToolbarItem.IconImageSource>
-                <FileImageSource File="import_export_dark.svg"/>
+                <FileImageSource File="{AppThemeBinding Light=import_export.svg, Dark=import_export_dark.svg}"/>
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
         <ToolbarItem 
@@ -14,7 +14,7 @@
             Priority="0"
             Clicked="OnExitClicked">
             <ToolbarItem.IconImageSource>
-                <FileImageSource File="exit_to_app_dark.svg"/>
+                <FileImageSource File="{AppThemeBinding Light=exit_to_app.svg, Dark=exit_to_app_dark.svg}"/>
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
     </ContentPage.ToolbarItems>
