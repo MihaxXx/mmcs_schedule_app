@@ -188,7 +188,7 @@ namespace mmcs_schedule_app
             
             // Open modal popup with lesson details, passing parent navigation
             var detailPage = new LessonDetailPage(item.name, item.timeslot, curricula, Navigation);
-            await Navigation.PushModalAsync(new NavigationPage(detailPage));
+            await Navigation.PushModalAsync(detailPage);
         }
     }
 }

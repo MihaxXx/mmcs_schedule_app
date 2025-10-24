@@ -47,29 +47,58 @@ namespace mmcs_schedule_app
             // Set week type
             WeekTypeLabel.Text = timeslot.week == -1 ? "" : timeslot.week == 0 ? "верхняя неделя" : "нижняя неделя";
             
-            // Populate teachers list
+            // Populate teachers list with clickable labels
             foreach (var curriculum in curricula)
             {
                 teachers.Add(new TeacherInfo(curriculum.teachername, $"ауд. {curriculum.roomname}", curriculum.teacherid));
+                
+                // Create a clickable teacher item
+                var teacherBorder = new Border
+                {
+                    Padding = 10,
+                    Margin = new Thickness(0, 0, 0, 5),
+                    Stroke = Colors.Transparent,
+                    BackgroundColor = Colors.Transparent,
+                    StrokeThickness = 0
+                };
+                
+                var stackLayout = new VerticalStackLayout
+                {
+                    Spacing = 2
+                };
+                
+                var nameLabel = new Label
+                {
+                    Text = curriculum.teachername,
+                    FontSize = 16,
+                    TextColor = Colors.Blue,
+                    TextDecorations = TextDecorations.Underline
+                };
+                
+                var roomLabel = new Label
+                {
+                    Text = $"ауд. {curriculum.roomname}",
+                    FontSize = 14,
+                    TextColor = Colors.Gray
+                };
+                
+                stackLayout.Children.Add(nameLabel);
+                stackLayout.Children.Add(roomLabel);
+                teacherBorder.Content = stackLayout;
+                
+                // Add tap gesture
+                var tapGesture = new TapGestureRecognizer();
+                tapGesture.Tapped += async (s, e) => await OnTeacherTapped(curriculum.teacherid);
+                teacherBorder.GestureRecognizers.Add(tapGesture);
+                
+                TeachersStackLayout.Children.Add(teacherBorder);
             }
-            
-            TeachersCollection.ItemsSource = teachers;
         }
 
-        private async void OnTeacherSelected(object sender, SelectionChangedEventArgs e)
+        private async Task OnTeacherTapped(int teacherId)
         {
-            if (e.CurrentSelection.Count == 0)
-                return;
-                
-            var selectedTeacher = e.CurrentSelection[0] as TeacherInfo;
-            if (selectedTeacher == null)
-                return;
-            
-            // Deselect the item
-            ((CollectionView)sender).SelectedItem = null;
-            
             // Find the teacher in the list to get the full name
-            var teacher = allTeachers.FirstOrDefault(t => t.id == selectedTeacher.TeacherId);
+            var teacher = allTeachers.FirstOrDefault(t => t.id == teacherId);
             if (teacher == null)
                 return;
             
@@ -77,11 +106,11 @@ namespace mmcs_schedule_app
             await Navigation.PopModalAsync();
             
             // Navigate to teacher's schedule on the main navigation stack
-            var scheduleView = new ScheduleView(User.UserInfo.teacher, selectedTeacher.TeacherId, teacher.name);
+            var scheduleView = new ScheduleView(User.UserInfo.teacher, teacherId, teacher.name);
             await parentNavigation.PushAsync(scheduleView);
         }
 
-        private async void OnCloseClicked(object sender, EventArgs e)
+        private async void OnBackgroundTapped(object sender, EventArgs e)
         {
             await Navigation.PopModalAsync();
         }
