@@ -134,7 +134,8 @@ namespace mmcs_schedule_app
             File.WriteAllText(App._fileName, JsonConvert.SerializeObject(App.user, Formatting.Indented), Encoding.UTF8);
             App._isLoggedIn = true;
             //await Navigation.PushAsync(new ScheduleView());
-            Navigation.InsertPageBefore(new ScheduleView(), this);
+            int id = user.Info == API.User.UserInfo.teacher ? user.teacherId : user.groupid;
+            Navigation.InsertPageBefore(new ScheduleView(user.Info, id, user.header), this);
             await Navigation.PopAsync();
 
         }
