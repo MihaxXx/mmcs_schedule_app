@@ -43,10 +43,8 @@ namespace mmcs_schedule_app
 
             SetupCommonInfo(disciplineName, timeslot);
 
-            // Set label for teachers
             ListLabel = "Преподаватели:";
 
-            // Populate teachers list
             foreach (var curriculum in curricula)
             {
                 Items.Add(new LessonItemInfo(
@@ -70,13 +68,10 @@ namespace mmcs_schedule_app
 
             SetupCommonInfo(disciplineName, timeslot);
 
-            // Set label for groups
             ListLabel = "Группы:";
 
-            // Set room info at top for teacher schedule
             RoomInfo = $"\nАудитория: {roomName}";
 
-            // Populate groups list - no room per item since teacher can't be in two places at once
             foreach (var techGroup in groups)
             {
                 string groupDisplay = $"{MainPage.StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
@@ -94,50 +89,40 @@ namespace mmcs_schedule_app
 
         private void SetupCommonInfo(string disciplineName, TimeOfLesson timeslot)
         {
-            // Set discipline name
             DisciplineName = disciplineName;
             Title = disciplineName;
 
-            // Set weekday using ScheduleView's static method
             Weekday = "\n" + ScheduleView.GetDayName(timeslot.day);
 
-            // Set timeslot
-            Timeslot = $"\n{timeslot.starth:D2}:{timeslot.startm:D2} - {timeslot.finishh:D2}:{timeslot.finishm:D2}";
+            Timeslot = "\n" + $"{timeslot.starth:D2}:{timeslot.startm:D2} - {timeslot.finishh:D2}:{timeslot.finishm:D2}";
 
-            // Set week type
             WeekType = timeslot.week == -1 ? "" : "\n" + (timeslot.week == 0 ? "верхняя неделя" : "нижняя неделя");
         }
 
         private async Task OnTeacherTapped(int teacherId)
         {
-            // Get teacher from cached list
             var teacher = MainPage.GetTeachers().FirstOrDefault(t => t.id == teacherId);
             if (teacher == null)
                 return;
 
             await ClosePopup();
 
-            // Navigate to teacher's schedule on the main navigation stack
             var scheduleView = new ScheduleView(User.UserInfo.teacher, teacherId, teacher.name);
             await parentNavigation.PushAsync(scheduleView);
         }
 
         private async Task OnGroupTapped(TechGroup techGroup)
         {
-            // Get grade from cached list
             var grade = MainPage.GetGrades().FirstOrDefault(g => g.num == techGroup.gradenum && g.degree == techGroup.degree);
             if (grade == null)
                 return;
 
-            // Load groups for this grade
-            var groups = GradeMethods.GetGroupsList(grade.id);
-            var group = groups.FirstOrDefault(g => g.num == techGroup.groupnum && g.name == techGroup.name);
+            var group = MainPage.GetGroups(grade.id).FirstOrDefault(g => g.num == techGroup.groupnum && g.name == techGroup.name);
             if (group == null)
                 return;
 
             await ClosePopup();
 
-            // Determine user info based on degree
             User.UserInfo userInfo = techGroup.degree switch
             {
                 "bachelor" => User.UserInfo.bachelor,
@@ -147,10 +132,8 @@ namespace mmcs_schedule_app
                 _ => User.UserInfo.bachelor
             };
 
-            // Create header like in MainPage
             string header = $"{MainPage.StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
 
-            // Navigate to group's schedule on the main navigation stack
             var scheduleView = new ScheduleView(userInfo, group.id, header);
             await parentNavigation.PushAsync(scheduleView);
         }

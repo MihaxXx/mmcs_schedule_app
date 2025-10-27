@@ -16,6 +16,7 @@ namespace mmcs_schedule_app
         // Static cached data with lazy loading
         private static API.Grade[] _cachedGrades;
         private static API.Teacher[] _cachedTeachers;
+        private static Dictionary<int, API.Group[]> _cachedGroups = [];
 
         public static API.Grade[] GetGrades()
         {
@@ -33,6 +34,16 @@ namespace mmcs_schedule_app
                 _cachedTeachers = API.TeacherMethods.GetTeachersList();
             }
             return _cachedTeachers;
+        }
+
+        public static API.Group[] GetGroups(int gradeId)
+        {
+            if (!_cachedGroups.TryGetValue(gradeId, out var groups))
+            {
+                _cachedGroups[gradeId] = API.GradeMethods.GetGroupsList(gradeId);
+            }
+
+            return _cachedGroups[gradeId];
         }
 
         protected override void OnAppearing()
@@ -70,8 +81,7 @@ namespace mmcs_schedule_app
         }
         private void Role_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var picker = sender as Picker;
-            if (picker.SelectedIndex == 0)
+            if (sender is not Picker picker || picker.SelectedIndex == 0)
             {
                 //Set to fix user is a student, later reaasigned to correct grade
                 user.Info = API.User.UserInfo.bachelor;
@@ -96,9 +106,9 @@ namespace mmcs_schedule_app
         }
         private void List_NmOrGr_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var picker = sender as Picker;
-            if (picker.SelectedIndex == -1)
+            if (sender is not Picker picker || picker.SelectedIndex == -1)
                 return;
+
             user.list1selID = picker.SelectedIndex;
             if (user.Info == API.User.UserInfo.teacher)
             {
@@ -120,7 +130,7 @@ namespace mmcs_schedule_app
                 {
                     for (int i = 0; i < Grades.Length; i++)
                     {
-                        Grades[i].Groups = API.GradeMethods.GetGroupsList(Grades[i].id).ToList();
+                        Grades[i].Groups = [.. GetGroups(Grades[i].id)];
                     }
 
                     List_Groups.IsEnabled = true;
@@ -139,9 +149,9 @@ namespace mmcs_schedule_app
         }
         private void List_Groups_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var picker = sender as Picker;
-            if (picker.SelectedIndex == -1)
+            if (sender is not Picker picker || picker.SelectedIndex == -1)
                 return;
+
             user.list2selID = List_Groups.SelectedIndex;
             user.group = Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].num;
             user.groupid = Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].id;
@@ -155,34 +165,32 @@ namespace mmcs_schedule_app
             App.user = user;
             File.WriteAllText(App._fileName, JsonConvert.SerializeObject(App.user, Formatting.Indented), Encoding.UTF8);
             App._isLoggedIn = true;
-            //await Navigation.PushAsync(new ScheduleView());
             int id = user.Info == API.User.UserInfo.teacher ? user.teacherId : user.groupid;
             Navigation.InsertPageBefore(new ScheduleView(user.Info, id, user.header), this);
             await Navigation.PopAsync();
-
         }
 
         public static string StuDegreeShort(string degree)
         {
-            switch (degree)
+            return degree switch
             {
-                case "bachelor": return "Бак.";
-                case "master": return "Маг.";
-                case "specialist": return "Спец.";
-                case "graduate": return "Асп.";
-                default: return "н/д";
-            }
+                "bachelor" => "Бак.",
+                "master" => "Маг.",
+                "specialist" => "Спец.",
+                "graduate" => "Асп.",
+                _ => "н/д",
+            };
         }
         public static string StuDegree(string degree)
         {
-            switch (degree)
+            return degree switch
             {
-                case "bachelor": return "Бакалавриат";
-                case "master": return "Магистратура";
-                case "specialist": return "Специалитет";
-                case "postgraduate": return "Аспирантура";
-                default: return "н/д";
-            }
+                "bachelor" => "Бакалавриат",
+                "master" => "Магистратура",
+                "specialist" => "Специалитет",
+                "postgraduate" => "Аспирантура",
+                _ => "н/д",
+            };
         }
     }
 }
