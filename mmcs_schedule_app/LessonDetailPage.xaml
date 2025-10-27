@@ -10,7 +10,7 @@
         <BoxView 
             BackgroundColor="Transparent">
             <BoxView.GestureRecognizers>
-                <TapGestureRecognizer Tapped="OnBackgroundTapped"/>
+                <TapGestureRecognizer Tapped="ClosePopup"/>
             </BoxView.GestureRecognizers>
         </BoxView>
         
@@ -19,96 +19,91 @@
                 Margin="0"
                 Padding="0"
                 Stroke="{AppThemeBinding Light=LightGray, Dark=Gray}"
-                BackgroundColor="{AppThemeBinding Light=#E6FFFFFF, Dark=#E61E1E1E}">
+                BackgroundColor="{AppThemeBinding Light=#FFFFFFFF, Dark=#FF1E1E1E}">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="20,20,0,0"/>
             </Border.StrokeShape>
             <Border.GestureRecognizers>
-                <SwipeGestureRecognizer Direction="Down" Swiped="OnSwipeDown"/>
+                <SwipeGestureRecognizer Direction="Down" Swiped="ClosePopup"/>
             </Border.GestureRecognizers>
             <VerticalStackLayout Spacing="0">
                 <!-- Handle bar -->
-                <BoxView HeightRequest="4"
+                <BoxView HeightRequest="5"
                          WidthRequest="40"
                          CornerRadius="2"
                          Color="Gray"
                          HorizontalOptions="Center"
-                         Margin="0,10,0,15"/>
+                         Margin="0,10"/>
                 
-                <ListView ItemsSource="{Binding Items}"
-                          MaximumHeightRequest="600"
-                          SelectionMode="None"
-                          SeparatorVisibility="None"
-                          HasUnevenRows="True">
-                    <ListView.Header>
-                        <VerticalStackLayout Padding="20,0,20,10" Spacing="10">
-                            <!-- Merged lesson details -->
-                            <Label HorizontalTextAlignment="Center" LineBreakMode="WordWrap">
-                                <Label.FormattedText>
-                                    <FormattedString>
-                                        <!-- Discipline name -->
-                                        <Span Text="{Binding DisciplineName}"
-                                              FontSize="20"
-                                              FontAttributes="Bold"/>
-                                        <Span Text="&#x0a;"/>
-                                        
-                                        <!-- Weekday -->
-                                        <Span Text="{Binding Weekday}"
-                                              FontSize="16"/>
-                                        <Span Text="&#x0a;"/>
-                                        
-                                        <!-- Timeslot -->
-                                        <Span Text="{Binding Timeslot}"
-                                              FontSize="16"/>
-                                        <Span Text="{Binding WeekTypeWithNewline}"
-                                              FontSize="14"
-                                              FontAttributes="Italic"/>
-                                        <Span Text="{Binding RoomInfoWithNewline}"
-                                              FontSize="14"/>
-                                    </FormattedString>
-                                </Label.FormattedText>
-                            </Label>
-                            
-                            <!-- Teachers/Groups label -->
-                            <Label Text="{Binding ListLabel}"
-                                   FontSize="16" 
-                                   FontAttributes="Bold"
-                                   Margin="0,5,0,0"/>
-                        </VerticalStackLayout>
-                    </ListView.Header>
-                    
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="local:LessonItemInfo">
-                            <ViewCell>
-                                <Border Padding="5,5,5,5"
-                                        Margin="20,0,20,5"
-                                        Stroke="Transparent"
-                                        BackgroundColor="Transparent">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type local:LessonDetailPage}}, Path=ItemTappedCommand}"
-                                                             CommandParameter="{Binding .}"/>
-                                    </Border.GestureRecognizers>
-                                    <HorizontalStackLayout Spacing="8">
-                                        <!-- Bullet point -->
-                                        <Label Text="•"
-                                               FontSize="16"
-                                               VerticalOptions="Start"/>
-                                        
-                                        <VerticalStackLayout Spacing="2"
-                                                            HorizontalOptions="FillAndExpand">
-                                            <Label Text="{Binding MainText}"
-                                                   FontSize="16"/>
-                                            <Label Text="{Binding SubText}"
-                                                   FontSize="14"
-                                                   TextColor="Gray"
-                                                   IsVisible="{Binding HasSubText}"/>
-                                        </VerticalStackLayout>
-                                    </HorizontalStackLayout>
-                                </Border>
-                            </ViewCell>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+                <ScrollView MaximumHeightRequest="600">
+                    <VerticalStackLayout Padding="20,0,20,20" Spacing="10">
+                        <!-- Discipline name -->
+                        <Label Text="{Binding DisciplineName}"
+                               FontSize="20" 
+                               FontAttributes="Bold"
+                               HorizontalTextAlignment="Center"/>
+                        
+                        <!-- Weekday -->
+                        <Label Text="{Binding Weekday}"
+                               FontSize="16"
+                               HorizontalTextAlignment="Center"/>
+                        
+                        <!-- Timeslot -->
+                        <Label Text="{Binding Timeslot}"
+                               FontSize="16"
+                               HorizontalTextAlignment="Center"/>
+                        
+                        <!-- Week type (верхняя/нижняя) -->
+                        <Label Text="{Binding WeekType}"
+                               FontSize="14"
+                               FontAttributes="Italic"
+                               HorizontalTextAlignment="Center"/>
+                        
+                        <!-- Room info (for teacher schedules) -->
+                        <Label Text="{Binding RoomInfo}"
+                               FontSize="14"
+                               HorizontalTextAlignment="Center"/>
+                        
+                        <!-- Teachers/Groups label -->
+                        <Label Text="{Binding ListLabel}"
+                               FontSize="16" 
+                               FontAttributes="Bold"
+                               Margin="0,5,0,0"/>
+                        
+                        <!-- Teachers/Groups list -->
+                        <CollectionView ItemsSource="{Binding Items}"
+                                       SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="local:LessonItemInfo">
+                                    <Border Padding="5"
+                                            Margin="0"
+                                            Stroke="Transparent"
+                                            BackgroundColor="Transparent">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type local:LessonDetailPage}}, Path=ItemTappedCommand}"
+                                                                 CommandParameter="{Binding .}"/>
+                                        </Border.GestureRecognizers>
+                                        <HorizontalStackLayout Spacing="8">
+                                            <!-- Bullet point -->
+                                            <Label Text="•"
+                                                   FontSize="16"
+                                                   VerticalOptions="Start"/>
+                                            
+                                            <VerticalStackLayout Spacing="2"
+                                                                HorizontalOptions="FillAndExpand">
+                                                <Label Text="{Binding MainText}"
+                                                       FontSize="16"/>
+                                                <Label Text="{Binding SubText}"
+                                                       FontSize="14"
+                                                       TextColor="Gray"/>
+                                            </VerticalStackLayout>
+                                        </HorizontalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </ScrollView>
             </VerticalStackLayout>
         </Border>
     </Grid>

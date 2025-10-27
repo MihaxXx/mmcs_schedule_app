@@ -9,7 +9,6 @@ namespace mmcs_schedule_app
         public string MainText { get; set; }
         public string SubText { get; set; }
         public object ItemData { get; set; }
-        public bool HasSubText => !string.IsNullOrEmpty(SubText);
 
         public LessonItemInfo(string mainText, string subText, object itemData)
         {
@@ -29,10 +28,6 @@ namespace mmcs_schedule_app
         public string WeekType { get; set; }
         public string ListLabel { get; set; }
         public string RoomInfo { get; set; }
-
-        // Formatted properties for use in FormattedString
-        public string WeekTypeWithNewline => string.IsNullOrEmpty(WeekType) ? "" : "\n" + WeekType;
-        public string RoomInfoWithNewline => string.IsNullOrEmpty(RoomInfo) ? "" : "\n" + RoomInfo;
 
         public ObservableCollection<LessonItemInfo> Items { get; set; } = new();
 
@@ -119,8 +114,7 @@ namespace mmcs_schedule_app
             if (teacher == null)
                 return;
 
-            // Close current modal first
-            await Navigation.PopModalAsync();
+            await ClosePopup();
 
             // Navigate to teacher's schedule on the main navigation stack
             var scheduleView = new ScheduleView(User.UserInfo.teacher, teacherId, teacher.name);
@@ -140,8 +134,7 @@ namespace mmcs_schedule_app
             if (group == null)
                 return;
 
-            // Close current modal first
-            await Navigation.PopModalAsync();
+            await ClosePopup();
 
             // Determine user info based on degree
             User.UserInfo userInfo = techGroup.degree switch
@@ -161,14 +154,14 @@ namespace mmcs_schedule_app
             await parentNavigation.PushAsync(scheduleView);
         }
 
-        private async void OnBackgroundTapped(object sender, EventArgs e)
+        private async Task ClosePopup()
         {
-            await Navigation.PopModalAsync();
+            if (Navigation.ModalStack.Count > 0)
+            {
+                await Navigation.PopModalAsync();
+            }
         }
 
-        private async void OnSwipeDown(object sender, SwipedEventArgs e)
-        {
-            await Navigation.PopModalAsync();
-        }
+        private async void ClosePopup(object sender, EventArgs e) => await ClosePopup();
     }
 }
