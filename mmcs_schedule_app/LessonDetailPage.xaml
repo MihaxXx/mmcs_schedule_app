@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" 
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" 
+             xmlns:local="clr-namespace:mmcs_schedule_app"
              x:Class="mmcs_schedule_app.LessonDetailPage"
+             x:DataType="local:LessonDetailPage"
              BackgroundColor="Transparent">
     <Grid>
         <!-- Semi-transparent background -->
@@ -17,7 +19,6 @@
                 Margin="0"
                 Padding="0"
                 Stroke="{AppThemeBinding Light=LightGray, Dark=Gray}"
-                StrokeThickness="1,1,1,0"
                 BackgroundColor="{AppThemeBinding Light=#E6FFFFFF, Dark=#E61E1E1E}">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="20,20,0,0"/>
@@ -38,36 +39,65 @@
                 <ScrollView MaximumHeightRequest="600">
                     <VerticalStackLayout Padding="20,0,20,20" Spacing="10">
                         <!-- Discipline name -->
-                        <Label x:Name="DisciplineLabel" 
+                        <Label Text="{Binding DisciplineName}"
                                FontSize="20" 
                                FontAttributes="Bold"
                                HorizontalTextAlignment="Center"/>
                         
                         <!-- Weekday -->
-                        <Label x:Name="WeekdayLabel" 
+                        <Label Text="{Binding Weekday}"
                                FontSize="16"
                                HorizontalTextAlignment="Center"/>
                         
                         <!-- Timeslot -->
-                        <Label x:Name="TimeslotLabel" 
+                        <Label Text="{Binding Timeslot}"
                                FontSize="16"
                                HorizontalTextAlignment="Center"/>
                         
                         <!-- Week type (верхняя/нижняя) -->
-                        <Label x:Name="WeekTypeLabel" 
+                        <Label Text="{Binding WeekType}"
                                FontSize="14"
                                FontAttributes="Italic"
                                HorizontalTextAlignment="Center"/>
                         
                         <!-- Teachers/Groups label -->
-                        <Label x:Name="ListLabel"
+                        <Label Text="{Binding ListLabel}"
                                FontSize="16" 
                                FontAttributes="Bold"
                                Margin="0,5,0,0"/>
                         
-                        <!-- Teachers/Groups list container -->
-                        <VerticalStackLayout x:Name="TeachersStackLayout"
-                                            Spacing="5"/>
+                        <!-- Teachers/Groups list -->
+                        <CollectionView ItemsSource="{Binding Items}"
+                                       SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="local:LessonItemInfo">
+                                    <Border Padding="5"
+                                            Margin="0"
+                                            Stroke="Transparent"
+                                            BackgroundColor="Transparent">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type local:LessonDetailPage}}, Path=ItemTappedCommand}"
+                                                                 CommandParameter="{Binding .}"/>
+                                        </Border.GestureRecognizers>
+                                        <HorizontalStackLayout Spacing="8">
+                                            <!-- Bullet point -->
+                                            <Label Text="•"
+                                                   FontSize="16"
+                                                   VerticalOptions="Start"/>
+                                            
+                                            <VerticalStackLayout Spacing="2"
+                                                                HorizontalOptions="FillAndExpand">
+                                                <Label Text="{Binding MainText}"
+                                                       FontSize="16"/>
+                                                <Label Text="{Binding SubText}"
+                                                       FontSize="14"
+                                                       TextColor="Gray"/>
+                                            </VerticalStackLayout>
+                                        </HorizontalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
                     </VerticalStackLayout>
                 </ScrollView>
             </VerticalStackLayout>

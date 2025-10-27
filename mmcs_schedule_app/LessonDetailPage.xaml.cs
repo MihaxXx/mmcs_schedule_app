@@ -1,42 +1,70 @@
 using API;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Windows.Input;
 
 namespace mmcs_schedule_app
 {
-    public class TeacherInfo
+    public class LessonItemInfo
     {
-        public string TeacherName { get; set; }
-        public string RoomName { get; set; }
-        public int TeacherId { get; set; }
+        public string MainText { get; set; }
+        public string SubText { get; set; }
+        public object ItemData { get; set; }
 
-        public TeacherInfo(string teacherName, string roomName, int teacherId)
+        public LessonItemInfo(string mainText, string subText, object itemData)
         {
-            TeacherName = teacherName;
-            RoomName = roomName;
-            TeacherId = teacherId;
+            MainText = mainText;
+            SubText = subText;
+            ItemData = itemData;
         }
     }
 
-    public class GroupInfo
-    {
-        public string GroupName { get; set; }
-        public string GroupDetails { get; set; }
-        public int GroupId { get; set; }
-
-        public GroupInfo(string groupName, string groupDetails, int groupId)
-        {
-            GroupName = groupName;
-            GroupDetails = groupDetails;
-            GroupId = groupId;
-        }
-    }
-
-    public partial class LessonDetailPage : ContentPage
+    public partial class LessonDetailPage : ContentPage, INotifyPropertyChanged
     {
         private readonly List<string> DayNames;
         private readonly INavigation parentNavigation;
         private readonly Teacher[] allTeachers;
         private readonly Grade[] allGrades;
+
+        private string _disciplineName;
+        public string DisciplineName
+        {
+            get => _disciplineName;
+            set { _disciplineName = value; OnPropertyChanged(); }
+        }
+
+        private string _weekday;
+        public string Weekday
+        {
+            get => _weekday;
+            set { _weekday = value; OnPropertyChanged(); }
+        }
+
+        private string _timeslot;
+        public string Timeslot
+        {
+            get => _timeslot;
+            set { _timeslot = value; OnPropertyChanged(); }
+        }
+
+        private string _weekType;
+        public string WeekType
+        {
+            get => _weekType;
+            set { _weekType = value; OnPropertyChanged(); }
+        }
+
+        private string _listLabel;
+        public string ListLabel
+        {
+            get => _listLabel;
+            set { _listLabel = value; OnPropertyChanged(); }
+        }
+
+        public ObservableCollection<LessonItemInfo> Items { get; set; } = new();
+
+        public ICommand ItemTappedCommand { get; }
 
         // Constructor for student schedule (shows teachers)
         public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, List<Curriculum> curricula, INavigation parentNav)
@@ -52,18 +80,21 @@ namespace mmcs_schedule_app
             SetupCommonInfo(disciplineName, timeslot);
             
             // Set label for teachers
-            ListLabel.Text = "Преподаватели:";
+            ListLabel = "Преподаватели:";
             
-            // Populate teachers list with clickable labels
+            // Populate teachers list
             foreach (var curriculum in curricula)
             {
-                var teacherBorder = CreateClickableItem(
+                Items.Add(new LessonItemInfo(
                     curriculum.teachername,
                     $"ауд. {curriculum.roomname}",
-                    async () => await OnTeacherTapped(curriculum.teacherid)
-                );
-                TeachersStackLayout.Children.Add(teacherBorder);
+                    curriculum.teacherid
+                ));
             }
+
+            ItemTappedCommand = new Command<LessonItemInfo>(async (item) => await OnTeacherTapped((int)item.ItemData));
+            
+            BindingContext = this;
         }
 
         // Constructor for teacher schedule (shows groups)
@@ -80,95 +111,38 @@ namespace mmcs_schedule_app
             SetupCommonInfo(disciplineName, timeslot);
             
             // Set label for groups
-            ListLabel.Text = "Группы:";
+            ListLabel = "Группы:";
             
-            // Populate groups list with clickable labels
+            // Populate groups list
             foreach (var techGroup in groups)
             {
                 string groupDisplay = $"{StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
-                var groupBorder = CreateClickableItem(
+                Items.Add(new LessonItemInfo(
                     groupDisplay,
                     $"ауд. {roomName}",
-                    async () => await OnGroupTapped(techGroup)
-                );
-                TeachersStackLayout.Children.Add(groupBorder);
+                    techGroup
+                ));
             }
+
+            ItemTappedCommand = new Command<LessonItemInfo>(async (item) => await OnGroupTapped((TechGroup)item.ItemData));
+            
+            BindingContext = this;
         }
 
         private void SetupCommonInfo(string disciplineName, TimeOfLesson timeslot)
         {
             // Set discipline name
-            DisciplineLabel.Text = disciplineName;
+            DisciplineName = disciplineName;
             Title = disciplineName;
             
             // Set weekday
-            WeekdayLabel.Text = DayNames[(timeslot.day + 1) % 7];
+            Weekday = DayNames[(timeslot.day + 1) % 7];
             
             // Set timeslot
-            TimeslotLabel.Text = $"{timeslot.starth:D2}:{timeslot.startm:D2} - {timeslot.finishh:D2}:{timeslot.finishm:D2}";
+            Timeslot = $"{timeslot.starth:D2}:{timeslot.startm:D2} - {timeslot.finishh:D2}:{timeslot.finishm:D2}";
             
             // Set week type
-            WeekTypeLabel.Text = timeslot.week == -1 ? "" : timeslot.week == 0 ? "верхняя неделя" : "нижняя неделя";
-        }
-
-        private Border CreateClickableItem(string mainText, string subText, Func<Task> onTapped)
-        {
-            var border = new Border
-            {
-                Padding = new Thickness(5, 5, 5, 5),
-                Margin = new Thickness(0, 0, 0, 0),
-                Stroke = Colors.Transparent,
-                BackgroundColor = Colors.Transparent,
-                StrokeThickness = 0
-            };
-            
-            var horizontalStack = new HorizontalStackLayout
-            {
-                Spacing = 8
-            };
-            
-            // Bullet point
-            var bulletLabel = new Label
-            {
-                Text = "•",
-                FontSize = 16,
-                VerticalOptions = LayoutOptions.Start,
-                Margin = new Thickness(0, 0, 0, 0)
-            };
-            
-            var verticalStack = new VerticalStackLayout
-            {
-                Spacing = 2,
-                HorizontalOptions = LayoutOptions.FillAndExpand
-            };
-            
-            var mainLabel = new Label
-            {
-                Text = mainText,
-                FontSize = 16
-            };
-            
-            var subLabel = new Label
-            {
-                Text = subText,
-                FontSize = 14,
-                TextColor = Colors.Gray
-            };
-            
-            verticalStack.Children.Add(mainLabel);
-            verticalStack.Children.Add(subLabel);
-            
-            horizontalStack.Children.Add(bulletLabel);
-            horizontalStack.Children.Add(verticalStack);
-            
-            border.Content = horizontalStack;
-            
-            // Add tap gesture
-            var tapGesture = new TapGestureRecognizer();
-            tapGesture.Tapped += async (s, e) => await onTapped();
-            border.GestureRecognizers.Add(tapGesture);
-            
-            return border;
+            WeekType = timeslot.week == -1 ? "" : timeslot.week == 0 ? "верхняя неделя" : "нижняя неделя";
         }
 
         private async Task OnTeacherTapped(int teacherId)
@@ -240,6 +214,13 @@ namespace mmcs_schedule_app
         private async void OnSwipeDown(object sender, SwipedEventArgs e)
         {
             await Navigation.PopModalAsync();
+        }
+
+        public new event PropertyChangedEventHandler PropertyChanged;
+
+        protected new void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
