@@ -19,7 +19,7 @@
                 Margin="0"
                 Padding="0"
                 Stroke="{AppThemeBinding Light=LightGray, Dark=Gray}"
-                BackgroundColor="{AppThemeBinding Light=#E6FFFFFF, Dark=#E61E1E1E}">
+                BackgroundColor="{AppThemeBinding Light=#FFFFFFFF, Dark=#FF1E1E1E}">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="20,20,0,0"/>
             </Border.StrokeShape>
@@ -28,12 +28,12 @@
             </Border.GestureRecognizers>
             <VerticalStackLayout Spacing="0">
                 <!-- Handle bar -->
-                <BoxView HeightRequest="4"
+                <BoxView HeightRequest="5"
                          WidthRequest="40"
                          CornerRadius="2"
                          Color="Gray"
                          HorizontalOptions="Center"
-                         Margin="0,10,0,15"/>
+                         Margin="0,10"/>
                 
                 <ScrollView MaximumHeightRequest="600">
                     <VerticalStackLayout Padding="20,0,20,20" Spacing="10">
