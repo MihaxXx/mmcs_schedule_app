@@ -114,11 +114,12 @@ namespace mmcs_schedule_app
             if (teacher == null)
                 return;
             
-            await CloseAndNavigate(async () =>
-            {
-                var scheduleView = new ScheduleView(User.UserInfo.teacher, teacherId, teacher.name);
-                await parentNavigation.PushAsync(scheduleView);
-            });
+            // Close current modal first
+            await Navigation.PopModalAsync();
+            
+            // Navigate to teacher's schedule on the main navigation stack
+            var scheduleView = new ScheduleView(User.UserInfo.teacher, teacherId, teacher.name);
+            await parentNavigation.PushAsync(scheduleView);
         }
 
         private async Task OnGroupTapped(TechGroup techGroup)
@@ -134,34 +135,25 @@ namespace mmcs_schedule_app
             if (group == null)
                 return;
             
-            await CloseAndNavigate(async () =>
-            {
-                // Determine user info based on degree
-                User.UserInfo userInfo = techGroup.degree switch
-                {
-                    "bachelor" => User.UserInfo.bachelor,
-                    "master" => User.UserInfo.master,
-                    "specialist" => User.UserInfo.bachelor,
-                    "postgraduate" => User.UserInfo.graduate,
-                    _ => User.UserInfo.bachelor
-                };
-                
-                // Create header like in MainPage
-                string header = $"{MainPage.StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
-                
-                // Navigate to group's schedule on the main navigation stack
-                var scheduleView = new ScheduleView(userInfo, group.id, header);
-                await parentNavigation.PushAsync(scheduleView);
-            });
-        }
-
-        private async Task CloseAndNavigate(Func<Task> navigationAction)
-        {
             // Close current modal first
             await Navigation.PopModalAsync();
             
-            // Then navigate
-            await navigationAction();
+            // Determine user info based on degree
+            User.UserInfo userInfo = techGroup.degree switch
+            {
+                "bachelor" => User.UserInfo.bachelor,
+                "master" => User.UserInfo.master,
+                "specialist" => User.UserInfo.bachelor,
+                "postgraduate" => User.UserInfo.graduate,
+                _ => User.UserInfo.bachelor
+            };
+            
+            // Create header like in MainPage
+            string header = $"{MainPage.StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
+            
+            // Navigate to group's schedule on the main navigation stack
+            var scheduleView = new ScheduleView(userInfo, group.id, header);
+            await parentNavigation.PushAsync(scheduleView);
         }
 
         private async void OnBackgroundTapped(object sender, EventArgs e)
