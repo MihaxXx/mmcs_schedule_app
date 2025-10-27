@@ -9,6 +9,7 @@ namespace mmcs_schedule_app
         public string MainText { get; set; }
         public string SubText { get; set; }
         public object ItemData { get; set; }
+        public bool HasSubText => !string.IsNullOrEmpty(SubText);
 
         public LessonItemInfo(string mainText, string subText, object itemData)
         {
@@ -73,7 +74,7 @@ namespace mmcs_schedule_app
             ListLabel = "Группы:";
 
             // Set room info at top for teacher schedule
-            RoomInfo = $"Аудитория: {roomName}";
+            RoomInfo = $"\nАудитория: {roomName}";
 
             // Populate groups list - no room per item since teacher can't be in two places at once
             foreach (var techGroup in groups)
@@ -98,13 +99,13 @@ namespace mmcs_schedule_app
             Title = disciplineName;
 
             // Set weekday using ScheduleView's static method
-            Weekday = ScheduleView.GetDayName(timeslot.day);
+            Weekday = "\n" + ScheduleView.GetDayName(timeslot.day);
 
             // Set timeslot
-            Timeslot = $"{timeslot.starth:D2}:{timeslot.startm:D2} - {timeslot.finishh:D2}:{timeslot.finishm:D2}";
+            Timeslot = $"\n{timeslot.starth:D2}:{timeslot.startm:D2} - {timeslot.finishh:D2}:{timeslot.finishm:D2}";
 
             // Set week type
-            WeekType = timeslot.week == -1 ? "" : timeslot.week == 0 ? "верхняя неделя" : "нижняя неделя";
+            WeekType = timeslot.week == -1 ? "" : "\n" + (timeslot.week == 0 ? "верхняя неделя" : "нижняя неделя");
         }
 
         private async Task OnTeacherTapped(int teacherId)
