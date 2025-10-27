@@ -10,7 +10,7 @@
         <BoxView 
             BackgroundColor="Transparent">
             <BoxView.GestureRecognizers>
-                <TapGestureRecognizer Tapped="OnBackgroundTapped"/>
+                <TapGestureRecognizer Tapped="ClosePopup"/>
             </BoxView.GestureRecognizers>
         </BoxView>
         
@@ -24,7 +24,7 @@
                 <RoundRectangle CornerRadius="20,20,0,0"/>
             </Border.StrokeShape>
             <Border.GestureRecognizers>
-                <SwipeGestureRecognizer Direction="Down" Swiped="OnSwipeDown"/>
+                <SwipeGestureRecognizer Direction="Down" Swiped="ClosePopup"/>
             </Border.GestureRecognizers>
             <VerticalStackLayout Spacing="0">
                 <!-- Handle bar -->

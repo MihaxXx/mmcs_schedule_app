@@ -37,14 +37,14 @@ namespace mmcs_schedule_app
         public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, List<Curriculum> curricula, INavigation parentNav)
         {
             InitializeComponent();
-            
+
             parentNavigation = parentNav;
-            
+
             SetupCommonInfo(disciplineName, timeslot);
-            
+
             // Set label for teachers
             ListLabel = "Преподаватели:";
-            
+
             // Populate teachers list
             foreach (var curriculum in curricula)
             {
@@ -56,7 +56,7 @@ namespace mmcs_schedule_app
             }
 
             ItemTappedCommand = new Command<LessonItemInfo>(async (item) => await OnTeacherTapped((int)item.ItemData));
-            
+
             BindingContext = this;
         }
 
@@ -64,17 +64,17 @@ namespace mmcs_schedule_app
         public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, List<TechGroup> groups, string roomName, INavigation parentNav)
         {
             InitializeComponent();
-            
+
             parentNavigation = parentNav;
-            
+
             SetupCommonInfo(disciplineName, timeslot);
-            
+
             // Set label for groups
             ListLabel = "Группы:";
-            
+
             // Set room info at top for teacher schedule
             RoomInfo = $"Аудитория: {roomName}";
-            
+
             // Populate groups list - no room per item since teacher can't be in two places at once
             foreach (var techGroup in groups)
             {
@@ -87,7 +87,7 @@ namespace mmcs_schedule_app
             }
 
             ItemTappedCommand = new Command<LessonItemInfo>(async (item) => await OnGroupTapped((TechGroup)item.ItemData));
-            
+
             BindingContext = this;
         }
 
@@ -96,13 +96,13 @@ namespace mmcs_schedule_app
             // Set discipline name
             DisciplineName = disciplineName;
             Title = disciplineName;
-            
+
             // Set weekday using ScheduleView's static method
             Weekday = ScheduleView.GetDayName(timeslot.day);
-            
+
             // Set timeslot
             Timeslot = $"{timeslot.starth:D2}:{timeslot.startm:D2} - {timeslot.finishh:D2}:{timeslot.finishm:D2}";
-            
+
             // Set week type
             WeekType = timeslot.week == -1 ? "" : timeslot.week == 0 ? "верхняя неделя" : "нижняя неделя";
         }
@@ -113,10 +113,9 @@ namespace mmcs_schedule_app
             var teacher = MainPage.GetTeachers().FirstOrDefault(t => t.id == teacherId);
             if (teacher == null)
                 return;
-            
-            // Close current modal first
-            await Navigation.PopModalAsync();
-            
+
+            await ClosePopup();
+
             // Navigate to teacher's schedule on the main navigation stack
             var scheduleView = new ScheduleView(User.UserInfo.teacher, teacherId, teacher.name);
             await parentNavigation.PushAsync(scheduleView);
@@ -128,16 +127,15 @@ namespace mmcs_schedule_app
             var grade = MainPage.GetGrades().FirstOrDefault(g => g.num == techGroup.gradenum && g.degree == techGroup.degree);
             if (grade == null)
                 return;
-            
+
             // Load groups for this grade
             var groups = GradeMethods.GetGroupsList(grade.id);
             var group = groups.FirstOrDefault(g => g.num == techGroup.groupnum && g.name == techGroup.name);
             if (group == null)
                 return;
-            
-            // Close current modal first
-            await Navigation.PopModalAsync();
-            
+
+            await ClosePopup();
+
             // Determine user info based on degree
             User.UserInfo userInfo = techGroup.degree switch
             {
@@ -147,23 +145,23 @@ namespace mmcs_schedule_app
                 "postgraduate" => User.UserInfo.graduate,
                 _ => User.UserInfo.bachelor
             };
-            
+
             // Create header like in MainPage
             string header = $"{MainPage.StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
-            
+
             // Navigate to group's schedule on the main navigation stack
             var scheduleView = new ScheduleView(userInfo, group.id, header);
             await parentNavigation.PushAsync(scheduleView);
         }
 
-        private async void OnBackgroundTapped(object sender, EventArgs e)
+        private async Task ClosePopup()
         {
-            await Navigation.PopModalAsync();
+            if (Navigation.ModalStack.Count > 0)
+            {
+                await Navigation.PopModalAsync();
+            }
         }
 
-        private async void OnSwipeDown(object sender, SwipedEventArgs e)
-        {
-            await Navigation.PopModalAsync();
-        }
+        private async void ClosePopup(object sender, EventArgs e) => await ClosePopup();
     }
 }
