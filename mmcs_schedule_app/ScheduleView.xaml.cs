@@ -51,6 +51,18 @@ namespace mmcs_schedule_app
         private readonly int userId; // teacherId or groupid
         private readonly string userHeader;
 
+        // Static cache for day names
+        private static List<string> _cachedDayNames;
+
+        public static string GetDayName(int dayIndex)
+        {
+            if (_cachedDayNames == null)
+            {
+                _cachedDayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames.ToList();
+            }
+            return _cachedDayNames[(dayIndex + 1) % 7];
+        }
+
         public ScheduleView(User.UserInfo info, int id, string header)
         {
             InitializeComponent();

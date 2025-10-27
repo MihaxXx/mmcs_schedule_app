@@ -60,6 +60,11 @@
                                FontAttributes="Italic"
                                HorizontalTextAlignment="Center"/>
                         
+                        <!-- Room info (for teacher schedules) -->
+                        <Label Text="{Binding RoomInfo}"
+                               FontSize="14"
+                               HorizontalTextAlignment="Center"/>
+                        
                         <!-- Teachers/Groups label -->
                         <Label Text="{Binding ListLabel}"
                                FontSize="16" 

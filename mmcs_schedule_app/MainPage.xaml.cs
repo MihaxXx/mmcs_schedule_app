@@ -13,6 +13,28 @@ namespace mmcs_schedule_app
         API.Teacher[] Teachers;
         API.User user = new API.User();
 
+        // Static cached data with lazy loading
+        private static API.Grade[] _cachedGrades;
+        private static API.Teacher[] _cachedTeachers;
+
+        public static API.Grade[] GetGrades()
+        {
+            if (_cachedGrades == null)
+            {
+                _cachedGrades = API.GradeMethods.GetGradesList();
+            }
+            return _cachedGrades;
+        }
+
+        public static API.Teacher[] GetTeachers()
+        {
+            if (_cachedTeachers == null)
+            {
+                _cachedTeachers = API.TeacherMethods.GetTeachersList();
+            }
+            return _cachedTeachers;
+        }
+
         protected override void OnAppearing()
         {
             base.OnAppearing();
@@ -36,8 +58,8 @@ namespace mmcs_schedule_app
             InitializeComponent();
             try
             {
-                Grades = API.GradeMethods.GetGradesList();
-                Teachers = API.TeacherMethods.GetTeachersList();
+                Grades = GetGrades();
+                Teachers = GetTeachers();
                 ErrorLabel.IsEnabled = ErrorLabel.IsVisible = false;
             }
             catch (System.Net.WebException)

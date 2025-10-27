@@ -1,7 +1,5 @@
 using API;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows.Input;
 
 namespace mmcs_schedule_app
@@ -20,47 +18,16 @@ namespace mmcs_schedule_app
         }
     }
 
-    public partial class LessonDetailPage : ContentPage, INotifyPropertyChanged
+    public partial class LessonDetailPage : ContentPage
     {
-        private readonly List<string> DayNames;
         private readonly INavigation parentNavigation;
-        private readonly Teacher[] allTeachers;
-        private readonly Grade[] allGrades;
 
-        private string _disciplineName;
-        public string DisciplineName
-        {
-            get => _disciplineName;
-            set { _disciplineName = value; OnPropertyChanged(); }
-        }
-
-        private string _weekday;
-        public string Weekday
-        {
-            get => _weekday;
-            set { _weekday = value; OnPropertyChanged(); }
-        }
-
-        private string _timeslot;
-        public string Timeslot
-        {
-            get => _timeslot;
-            set { _timeslot = value; OnPropertyChanged(); }
-        }
-
-        private string _weekType;
-        public string WeekType
-        {
-            get => _weekType;
-            set { _weekType = value; OnPropertyChanged(); }
-        }
-
-        private string _listLabel;
-        public string ListLabel
-        {
-            get => _listLabel;
-            set { _listLabel = value; OnPropertyChanged(); }
-        }
+        public string DisciplineName { get; set; }
+        public string Weekday { get; set; }
+        public string Timeslot { get; set; }
+        public string WeekType { get; set; }
+        public string ListLabel { get; set; }
+        public string RoomInfo { get; set; }
 
         public ObservableCollection<LessonItemInfo> Items { get; set; } = new();
 
@@ -71,11 +38,7 @@ namespace mmcs_schedule_app
         {
             InitializeComponent();
             
-            DayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames.ToList();
             parentNavigation = parentNav;
-            
-            // Load all teachers for ID lookup
-            allTeachers = TeacherMethods.GetTeachersList();
             
             SetupCommonInfo(disciplineName, timeslot);
             
@@ -102,24 +65,23 @@ namespace mmcs_schedule_app
         {
             InitializeComponent();
             
-            DayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames.ToList();
             parentNavigation = parentNav;
-            
-            // Load all grades for group lookup
-            allGrades = GradeMethods.GetGradesList();
             
             SetupCommonInfo(disciplineName, timeslot);
             
             // Set label for groups
             ListLabel = "Группы:";
             
-            // Populate groups list
+            // Set room info at top for teacher schedule
+            RoomInfo = $"Аудитория: {roomName}";
+            
+            // Populate groups list - no room per item since teacher can't be in two places at once
             foreach (var techGroup in groups)
             {
-                string groupDisplay = $"{StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
+                string groupDisplay = $"{MainPage.StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
                 Items.Add(new LessonItemInfo(
                     groupDisplay,
-                    $"ауд. {roomName}",
+                    "", // No room info per item
                     techGroup
                 ));
             }
@@ -135,8 +97,8 @@ namespace mmcs_schedule_app
             DisciplineName = disciplineName;
             Title = disciplineName;
             
-            // Set weekday
-            Weekday = DayNames[(timeslot.day + 1) % 7];
+            // Set weekday using ScheduleView's static method
+            Weekday = ScheduleView.GetDayName(timeslot.day);
             
             // Set timeslot
             Timeslot = $"{timeslot.starth:D2}:{timeslot.startm:D2} - {timeslot.finishh:D2}:{timeslot.finishm:D2}";
@@ -147,23 +109,22 @@ namespace mmcs_schedule_app
 
         private async Task OnTeacherTapped(int teacherId)
         {
-            // Find the teacher in the list to get the full name
-            var teacher = allTeachers.FirstOrDefault(t => t.id == teacherId);
+            // Get teacher from cached list
+            var teacher = MainPage.GetTeachers().FirstOrDefault(t => t.id == teacherId);
             if (teacher == null)
                 return;
             
-            // Close current modal first
-            await Navigation.PopModalAsync();
-            
-            // Navigate to teacher's schedule on the main navigation stack
-            var scheduleView = new ScheduleView(User.UserInfo.teacher, teacherId, teacher.name);
-            await parentNavigation.PushAsync(scheduleView);
+            await CloseAndNavigate(async () =>
+            {
+                var scheduleView = new ScheduleView(User.UserInfo.teacher, teacherId, teacher.name);
+                await parentNavigation.PushAsync(scheduleView);
+            });
         }
 
         private async Task OnGroupTapped(TechGroup techGroup)
         {
-            // Find the matching group by looking up grades
-            var grade = allGrades.FirstOrDefault(g => g.num == techGroup.gradenum && g.degree == techGroup.degree);
+            // Get grade from cached list
+            var grade = MainPage.GetGrades().FirstOrDefault(g => g.num == techGroup.gradenum && g.degree == techGroup.degree);
             if (grade == null)
                 return;
             
@@ -173,37 +134,34 @@ namespace mmcs_schedule_app
             if (group == null)
                 return;
             
+            await CloseAndNavigate(async () =>
+            {
+                // Determine user info based on degree
+                User.UserInfo userInfo = techGroup.degree switch
+                {
+                    "bachelor" => User.UserInfo.bachelor,
+                    "master" => User.UserInfo.master,
+                    "specialist" => User.UserInfo.bachelor,
+                    "postgraduate" => User.UserInfo.graduate,
+                    _ => User.UserInfo.bachelor
+                };
+                
+                // Create header like in MainPage
+                string header = $"{MainPage.StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
+                
+                // Navigate to group's schedule on the main navigation stack
+                var scheduleView = new ScheduleView(userInfo, group.id, header);
+                await parentNavigation.PushAsync(scheduleView);
+            });
+        }
+
+        private async Task CloseAndNavigate(Func<Task> navigationAction)
+        {
             // Close current modal first
             await Navigation.PopModalAsync();
             
-            // Determine user info based on degree
-            User.UserInfo userInfo = techGroup.degree switch
-            {
-                "bachelor" => User.UserInfo.bachelor,
-                "master" => User.UserInfo.master,
-                "specialist" => User.UserInfo.bachelor,
-                "postgraduate" => User.UserInfo.graduate,
-                _ => User.UserInfo.bachelor
-            };
-            
-            // Create header like in MainPage
-            string header = $"{StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
-            
-            // Navigate to group's schedule on the main navigation stack
-            var scheduleView = new ScheduleView(userInfo, group.id, header);
-            await parentNavigation.PushAsync(scheduleView);
-        }
-
-        private static string StuDegreeShort(string degree)
-        {
-            return degree switch
-            {
-                "bachelor" => "Бак.",
-                "master" => "Маг.",
-                "specialist" => "Спец.",
-                "postgraduate" => "Асп.",
-                _ => "н/д"
-            };
+            // Then navigate
+            await navigationAction();
         }
 
         private async void OnBackgroundTapped(object sender, EventArgs e)
@@ -214,13 +172,6 @@ namespace mmcs_schedule_app
         private async void OnSwipeDown(object sender, SwipedEventArgs e)
         {
             await Navigation.PopModalAsync();
-        }
-
-        public new event PropertyChangedEventHandler PropertyChanged;
-
-        protected new void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
