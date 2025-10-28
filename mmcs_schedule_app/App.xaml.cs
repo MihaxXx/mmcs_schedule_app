@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using API;
+using Newtonsoft.Json;
 using System.Text;
 
 namespace mmcs_schedule_app
@@ -7,7 +8,7 @@ namespace mmcs_schedule_app
     {
         public const string host = "http://schedule.sfedu.ru";
 
-        public static API.User user;
+        public static User user;
 
         public static bool _isLoggedIn;
 
@@ -17,7 +18,7 @@ namespace mmcs_schedule_app
         {
             InitializeComponent();
 
-            if (File.Exists(_fileName) && JsonConvert.DeserializeObject<API.User>(File.ReadAllText(_fileName, Encoding.UTF8)) is { } loggedInUser)
+            if (File.Exists(_fileName) && JsonConvert.DeserializeObject<User>(File.ReadAllText(_fileName, Encoding.UTF8)) is { } loggedInUser)
             {
                 _isLoggedIn = true;
                 user = loggedInUser;
@@ -30,7 +31,7 @@ namespace mmcs_schedule_app
 
             if (_isLoggedIn)
             {
-                page = new NavigationPage(new ScheduleView());
+                page = new NavigationPage(new ScheduleView(user.Info, user.Info == User.UserInfo.teacher ? user.teacherId : user.groupid, user.header));
             }
             else
             {

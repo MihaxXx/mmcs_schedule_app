@@ -47,13 +47,33 @@ namespace mmcs_schedule_app
 
         List<string> DayNames;
 
-        public ScheduleView()
+        private readonly User.UserInfo userInfo;
+        private readonly int userId; // teacherId or groupid
+        private readonly string userHeader;
+
+        // Static cache for day names
+        private static List<string> _cachedDayNames;
+
+        public static string GetDayName(int dayIndex)
+        {
+            if (_cachedDayNames == null)
+            {
+                _cachedDayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames.ToList();
+            }
+            return _cachedDayNames[(dayIndex + 1) % 7];
+        }
+
+        public ScheduleView(User.UserInfo info, int id, string header)
         {
             InitializeComponent();
-            Title = App.user.header;
-            if (App.user.Info == User.UserInfo.teacher)
+            userInfo = info;
+            userId = id;
+            userHeader = header;
+            Title = userHeader;
+
+            if (userInfo == User.UserInfo.teacher)
             {
-                foreach (var LLC in TeacherMethods.RequestWeekSchedule(App.user.teacherId))
+                foreach (var LLC in TeacherMethods.RequestWeekSchedule(userId))
                 {
                     var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
                     Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname,
@@ -66,7 +86,7 @@ namespace mmcs_schedule_app
             else
             {
                 //Go thought list of lessons (present timeslots for group)
-                foreach (var LLC in StudentMethods.RequestWeekSchedule(App.user.groupid))
+                foreach (var LLC in StudentMethods.RequestWeekSchedule(userId))
                 {
                     var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
                     //Go thought list of Curriculums (present subj for timeslot)
@@ -129,7 +149,6 @@ namespace mmcs_schedule_app
         }
         async private void OnExitClicked(object sender, EventArgs e)
         {
-            //await Navigation.PushModalAsync(new MainPage());
             Navigation.InsertPageBefore(new MainPage(), this);
             await Navigation.PopAsync();
         }
@@ -153,15 +172,27 @@ namespace mmcs_schedule_app
             }
         }
 
-        //TODO: make popup intractive https://forums.xamarin.com/discussion/102828/best-way-to-create-non-full-screen-popup
-        void OnListItemTapped(object sender, ItemTappedEventArgs e)
+        async void OnListItemTapped(object sender, ItemTappedEventArgs e)
         {
             ((ListView)sender).SelectedItem = null;
             var item = (LessonItem)e.Item;
-            List<string> info = new List<string> { DayNames[(item.timeslot.day + 1) % 7], item.time.Replace("\n", " - "), item.who };
-            if (item.TData.Item1 != null)
-                info.Insert(2, "a." + item.room);
-            DisplayAlert(item.name, string.Join("\n\n", info), "ОК");
+
+            LessonDetailPage detailPage;
+
+            if (userInfo == User.UserInfo.teacher && item.TData.Item1 != null)
+            {
+                detailPage = new LessonDetailPage(item.name, item.timeslot, item.TData.Item3, item.room, Navigation);
+            }
+            else if (userInfo != User.UserInfo.teacher && item.SData.Item1 != null)
+            {
+                detailPage = new LessonDetailPage(item.name, item.timeslot, item.SData.Item2, Navigation);
+            }
+            else
+            {
+                return;
+            }
+
+            await Navigation.PushModalAsync(detailPage);
         }
     }
 }
