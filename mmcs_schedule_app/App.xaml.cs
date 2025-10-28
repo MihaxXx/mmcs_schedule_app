@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using API;
+using Newtonsoft.Json;
 using System.Text;
 
 namespace mmcs_schedule_app
@@ -30,7 +31,7 @@ namespace mmcs_schedule_app
 
             if (_isLoggedIn)
             {
-                page = new NavigationPage(new ScheduleView());
+                page = new NavigationPage(new ScheduleView(user.Info, user.Info == User.UserInfo.teacher ? user.teacherId : user.groupid, user.header));
             }
             else
             {

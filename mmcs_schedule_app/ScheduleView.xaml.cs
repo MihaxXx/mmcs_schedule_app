@@ -70,7 +70,7 @@ namespace mmcs_schedule_app
             userId = id;
             userHeader = header;
             Title = userHeader;
-            
+
             if (userInfo == User.UserInfo.teacher)
             {
                 foreach (var LLC in TeacherMethods.RequestWeekSchedule(userId))
@@ -108,11 +108,6 @@ namespace mmcs_schedule_app
 
             //Must be at the end!!!
             BindingContext = this;
-        }
-
-        // Keep constructor for backward compatibility with App.user
-        public ScheduleView() : this(App.user.Info, App.user.Info == User.UserInfo.teacher ? App.user.teacherId : App.user.groupid, App.user.header)
-        {
         }
 
         private void UpdateGroupedShed()
@@ -154,7 +149,6 @@ namespace mmcs_schedule_app
         }
         async private void OnExitClicked(object sender, EventArgs e)
         {
-            //await Navigation.PushModalAsync(new MainPage());
             Navigation.InsertPageBefore(new MainPage(), this);
             await Navigation.PopAsync();
         }
@@ -182,25 +176,22 @@ namespace mmcs_schedule_app
         {
             ((ListView)sender).SelectedItem = null;
             var item = (LessonItem)e.Item;
-            
-            // Open modal popup with lesson details, passing parent navigation
+
             LessonDetailPage detailPage;
-            
+
             if (userInfo == User.UserInfo.teacher && item.TData.Item1 != null)
             {
-                // Teacher schedule - show groups
                 detailPage = new LessonDetailPage(item.name, item.timeslot, item.TData.Item3, item.room, Navigation);
             }
             else if (userInfo != User.UserInfo.teacher && item.SData.Item1 != null)
             {
-                // Student schedule - show teachers
                 detailPage = new LessonDetailPage(item.name, item.timeslot, item.SData.Item2, Navigation);
             }
             else
             {
                 return;
             }
-            
+
             await Navigation.PushModalAsync(detailPage);
         }
     }
