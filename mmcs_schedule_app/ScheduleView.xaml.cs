@@ -93,10 +93,15 @@ namespace mmcs_schedule_app
                     foreach (var LC in LLC.Item2.ToLookup(lc => lc.subjectid).Select(coll => coll.First()))
                     {
                         var FilteredCurs = LLC.Item2.Where(c => c.subjectid == LC.subjectid).ToList();
-                        Shed.Add(new LessonItem(tol.ToString(), LC.subjectname,
-                            tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя", LC.roomname,
+
+                        Shed.Add(new LessonItem(
+                            tol.ToString(),
+                            LC.subjectname,
+                            tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя",
+                            FilteredCurs.Count > 2 ? "..." : string.Join("\n", FilteredCurs.Select(curs => curs.roomname)),
                             string.Join("\n", FilteredCurs.Select(c => $"• {c.teachername}\n  {c.roomname}")),
-                            tol, (LLC.Item1, FilteredCurs)));
+                            tol,
+                            (LLC.Item1, FilteredCurs)));
                     }
                 }
             }

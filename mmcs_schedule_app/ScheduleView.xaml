@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="mmcs_schedule_app.ScheduleView">
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:mmcs_schedule_app"
+             x:Class="mmcs_schedule_app.ScheduleView">
     <ContentPage.ToolbarItems>
         <ToolbarItem 
             Order="Primary"
@@ -26,7 +29,7 @@
                   SelectionMode="None"
                   ItemTapped="OnListItemTapped">
             <ListView.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="local:LessonItem">
                     <ViewCell>
                         <Grid Padding="0">
                             <Grid.RowDefinitions>
