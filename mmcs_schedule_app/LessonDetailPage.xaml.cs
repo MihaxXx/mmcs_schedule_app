@@ -26,6 +26,7 @@ namespace mmcs_schedule_app
         public string DisciplineName { get; set; }
         public string Weekday { get; set; }
         public string Timeslot { get; set; }
+        public string LessonInfo { get; set; }
         public string WeekType { get; set; }
         public string ListLabel { get; set; }
         public string RoomInfo { get; set; }
@@ -35,13 +36,13 @@ namespace mmcs_schedule_app
         public ICommand ItemTappedCommand { get; }
 
         // Constructor for student schedule (shows teachers)
-        public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, List<Curriculum> curricula, INavigation parentNav)
+        public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, string lessonInfo, List<Curriculum> curricula, INavigation parentNav)
         {
             InitializeComponent();
 
             parentNavigation = parentNav;
 
-            SetupCommonInfo(disciplineName, timeslot);
+            SetupCommonInfo(disciplineName, timeslot, lessonInfo);
 
             ListLabel = "Преподаватели:";
 
@@ -60,13 +61,13 @@ namespace mmcs_schedule_app
         }
 
         // Constructor for teacher schedule (shows groups)
-        public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, List<TechGroup> groups, string roomName, INavigation parentNav)
+        public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, string lessonInfo, List<TechGroup> groups, string roomName, INavigation parentNav)
         {
             InitializeComponent();
 
             parentNavigation = parentNav;
 
-            SetupCommonInfo(disciplineName, timeslot);
+            SetupCommonInfo(disciplineName, timeslot, lessonInfo);
 
             ListLabel = "Группы:";
 
@@ -87,7 +88,7 @@ namespace mmcs_schedule_app
             BindingContext = this;
         }
 
-        private void SetupCommonInfo(string disciplineName, TimeOfLesson timeslot)
+        private void SetupCommonInfo(string disciplineName, TimeOfLesson timeslot, string lessonInfo)
         {
             DisciplineName = disciplineName;
             Title = disciplineName;
@@ -95,6 +96,8 @@ namespace mmcs_schedule_app
             Weekday = "\n" + ScheduleView.GetDayName(timeslot.day);
 
             Timeslot = "\n" + $"{timeslot.starth:D2}:{timeslot.startm:D2} - {timeslot.finishh:D2}:{timeslot.finishm:D2}";
+
+            LessonInfo = string.IsNullOrEmpty(lessonInfo) ? "" : "\n" + lessonInfo;
 
             WeekType = timeslot.week == -1 ? "" : "\n" + (timeslot.week == 0 ? "верхняя неделя" : "нижняя неделя");
         }

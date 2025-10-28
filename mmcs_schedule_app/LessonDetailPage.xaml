@@ -46,6 +46,8 @@
                                           FontSize="16" />
                                     <Span Text="{Binding Timeslot}"
                                           FontSize="16" />
+                                    <Span Text="{Binding LessonInfo}"
+                                          FontSize="16" />
                                     <Span Text="{Binding WeekType}"
                                           FontSize="16"
                                           FontAttributes="Italic" />

@@ -51,7 +51,7 @@
                                    Text="{Binding name}"/>
                             <Label Grid.Row="1"
                                    Grid.Column="1"
-                                   Text="{Binding weektypes}"
+                                   Text="{Binding notes}"
                                    FontAttributes="Italic"/>
                             <Label Grid.RowSpan="2"
                                    Grid.Column="2"

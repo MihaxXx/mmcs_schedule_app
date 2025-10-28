@@ -7,28 +7,28 @@ namespace mmcs_schedule_app
     {
         public string time { get; set; }
         public string name { get; set; }
-        public string weektypes { get; set; }
+        public string notes { get; set; }
         public string room { get; set; }
         public string who { get; set; }
         public TimeOfLesson timeslot { get; set; }
         public (Lesson, List<Curriculum>, List<TechGroup>) TData { get; private set; }
         public (Lesson, List<Curriculum>) SData { get; private set; }
 
-        public LessonItem(string tm, string nm, string wt, string r, string w, TimeOfLesson ts, (Lesson, List<Curriculum>, List<TechGroup>) TD)
+        public LessonItem(string tm, string nm, string n, string r, string w, TimeOfLesson ts, (Lesson, List<Curriculum>, List<TechGroup>) TD)
         {
             time = tm;
             name = nm;
-            weektypes = wt;
+            notes = n;
             room = r;
             who = w;
             timeslot = ts;
             TData = TD;
         }
-        public LessonItem(string tm, string nm, string wt, string r, string w, TimeOfLesson ts, (Lesson, List<Curriculum>) SD)
+        public LessonItem(string tm, string nm, string n, string r, string w, TimeOfLesson ts, (Lesson, List<Curriculum>) SD)
         {
             time = tm;
             name = nm;
-            weektypes = wt;
+            notes = n;
             room = r;
             who = w;
             timeslot = ts;
@@ -76,11 +76,14 @@ namespace mmcs_schedule_app
                 foreach (var LLC in TeacherMethods.RequestWeekSchedule(userId))
                 {
                     var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
-                    Shed.Add(new LessonItem(tol.ToString(), LLC.Item2[0].subjectname,
-                        tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя",
+                    Shed.Add(new LessonItem(
+                        tol.ToString(),
+                        LLC.Item2[0].subjectname,
+                        (string.IsNullOrEmpty(LLC.Item1.info) ? "" : LLC.Item1.info + "\n") + (tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя"),
                         LLC.Item2.First().roomname,
                         string.Join("\n", LLC.Item3.Select(g => $"• {StuDegreeShort(g.degree)} {g.gradenum}.{g.groupnum}")),
-                        tol, LLC));
+                        tol,
+                        LLC));
                 }
             }
             else
@@ -97,7 +100,7 @@ namespace mmcs_schedule_app
                         Shed.Add(new LessonItem(
                             tol.ToString(),
                             LC.subjectname,
-                            tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя",
+                            (string.IsNullOrEmpty(LLC.Item1.info) ? "" : LLC.Item1.info + "\n") + (tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя"),
                             FilteredCurs.Count > 2 ? "..." : string.Join("\n", FilteredCurs.Select(curs => curs.roomname)),
                             string.Join("\n", FilteredCurs.Select(c => $"• {c.teachername}\n  {c.roomname}")),
                             tol,
@@ -186,11 +189,11 @@ namespace mmcs_schedule_app
 
             if (userInfo == User.UserInfo.teacher && item.TData.Item1 != null)
             {
-                detailPage = new LessonDetailPage(item.name, item.timeslot, item.TData.Item3, item.room, Navigation);
+                detailPage = new LessonDetailPage(item.name, item.timeslot, item.TData.Item1.info, item.TData.Item3, item.room, Navigation);
             }
             else if (userInfo != User.UserInfo.teacher && item.SData.Item1 != null)
             {
-                detailPage = new LessonDetailPage(item.name, item.timeslot, item.SData.Item2, Navigation);
+                detailPage = new LessonDetailPage(item.name, item.timeslot, item.SData.Item1.info, item.SData.Item2, Navigation);
             }
             else
             {

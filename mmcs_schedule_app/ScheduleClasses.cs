@@ -24,6 +24,10 @@ namespace API
         // Время предмета
         public string timeslot { get; set; }
 
+        [DataMember]
+        // Доп информация
+        public string info { get; set; }
+
         public override string ToString()
         {
             return $"{id} {uberid} {subcount} {timeslot}";
