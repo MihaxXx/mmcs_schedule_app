@@ -63,13 +63,18 @@ namespace mmcs_schedule_app
             return _cachedDayNames[(dayIndex + 1) % 7];
         }
 
-        public ScheduleView(User.UserInfo info, int id, string header)
+        public ScheduleView(User.UserInfo info, int id, string header, bool isFromModal = false)
         {
             InitializeComponent();
             userInfo = info;
             userId = id;
             userHeader = header;
             Title = userHeader;
+
+            if (isFromModal)
+            {
+                ToolbarItems.RemoveAt(1); // Remove Exit button
+            }
 
             if (userInfo == User.UserInfo.teacher)
             {
@@ -163,21 +168,28 @@ namespace mmcs_schedule_app
 
         private async void OnChangeWeekClicked(object sender, EventArgs e)
         {
-            string action = await DisplayActionSheet("Выберите тип недели", "Отмена", null, ["Текущая неделя", "Только верхняя", "Только нижняя", "Полное расписание"]);
+            string[] filterOptions = ["Текущая неделя", "Только верхняя", "Только нижняя", "Полное расписание"];
+            string action = await DisplayActionSheet("Выберите тип недели", "Отмена", null,
+                [.. filterOptions.Select(o => FilterTextToWeek(o) == selectedWeek.week ? $"◉ {o}" : $"○ {o}")]);
 
             if (action != null && action != "Отмена")
             {
-                selectedWeek.week = action switch
-                {
-                    "Текущая неделя" => WeekType.Current,
-                    "Только верхняя" => WeekType.Upper,
-                    "Только нижняя" => WeekType.Lower,
-                    "Полное расписание" => WeekType.Full,
-                    _ => WeekType.Current,
-                };
+                selectedWeek.week = FilterTextToWeek(action.TrimStart('○', '◉', ' '));
 
                 UpdateGroupedShed();
             }
+        }
+
+        private static WeekType FilterTextToWeek(string action)
+        {
+            return action switch
+            {
+                "Текущая неделя" => WeekType.Current,
+                "Только верхняя" => WeekType.Upper,
+                "Только нижняя" => WeekType.Lower,
+                "Полное расписание" => WeekType.Full,
+                _ => WeekType.Current,
+            };
         }
 
         async void OnListItemTapped(object sender, ItemTappedEventArgs e)

@@ -110,7 +110,7 @@ namespace mmcs_schedule_app
 
             await ClosePopup();
 
-            var scheduleView = new ScheduleView(User.UserInfo.teacher, teacherId, teacher.name);
+            var scheduleView = new ScheduleView(User.UserInfo.teacher, teacherId, teacher.name, true);
             await parentNavigation.PushAsync(scheduleView);
         }
 
@@ -137,7 +137,7 @@ namespace mmcs_schedule_app
 
             string header = $"{MainPage.StuDegreeShort(techGroup.degree)} {techGroup.name} {techGroup.gradenum}.{techGroup.groupnum}";
 
-            var scheduleView = new ScheduleView(userInfo, group.id, header);
+            var scheduleView = new ScheduleView(userInfo, group.id, header, true);
             await parentNavigation.PushAsync(scheduleView);
         }
 
