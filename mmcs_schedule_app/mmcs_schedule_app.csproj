@@ -5,7 +5,7 @@
 		<SingleProject>true</SingleProject>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>mmcs_schedule_app</RootNamespace>
-    <VersionPrefix>1.0.1</VersionPrefix>
+    <VersionPrefix>1.1.0</VersionPrefix>
     <Version>$(VersionPrefix)$(VersionSuffix)</Version>
 		<UseMaui>true</UseMaui>
 		<Nullable>enable</Nullable>
