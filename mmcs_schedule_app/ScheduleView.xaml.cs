@@ -109,10 +109,13 @@ namespace mmcs_schedule_app
             activityIndicator.IsRunning = activityIndicator.IsVisible = true;
             try
             {
-                currentWeek = await CurrentSubject.RequestCurrentWeekAsync();
-                Shed = userInfo == User.UserInfo.teacher ? await RequestTeacherLessonsAsync() : await RequestStudentLessonsAsync();
+                SchRequests.FetchInfo info = new();
+                currentWeek = await CurrentSubject.RequestCurrentWeekAsync(info);
+                Shed = userInfo == User.UserInfo.teacher ? await RequestTeacherLessonsAsync(info) : await RequestStudentLessonsAsync(info);
                 UpdateGroupedShed();
-                isScheduleLoaded = true;
+                isScheduleLoaded = info.StaleSince is null;
+                info.ShowOn(StaleLabel);
+                Retry_btn.IsVisible = info.StaleSince is not null;
             }
             catch (SchRequests.ScheduleUnavailableException)
             {
@@ -125,10 +128,10 @@ namespace mmcs_schedule_app
             }
         }
 
-        private async Task<List<LessonItem>> RequestTeacherLessonsAsync()
+        private async Task<List<LessonItem>> RequestTeacherLessonsAsync(SchRequests.FetchInfo info)
         {
             List<LessonItem> lessons = [];
-            foreach (var LLC in await TeacherMethods.RequestWeekScheduleAsync(userId))
+            foreach (var LLC in await TeacherMethods.RequestWeekScheduleAsync(userId, info))
             {
                 var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
                 lessons.Add(new LessonItem(
@@ -143,11 +146,11 @@ namespace mmcs_schedule_app
             return lessons;
         }
 
-        private async Task<List<LessonItem>> RequestStudentLessonsAsync()
+        private async Task<List<LessonItem>> RequestStudentLessonsAsync(SchRequests.FetchInfo info)
         {
             List<LessonItem> lessons = [];
             //Go thought list of lessons (present timeslots for group)
-            foreach (var LLC in await StudentMethods.RequestWeekScheduleAsync(userId))
+            foreach (var LLC in await StudentMethods.RequestWeekScheduleAsync(userId, info))
             {
                 var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
                 //Go thought list of Curriculums (present subj for timeslot)

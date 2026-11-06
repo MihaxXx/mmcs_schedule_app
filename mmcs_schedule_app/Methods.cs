@@ -166,12 +166,29 @@ namespace API
         /// Request current week
         /// </summary>
         /// <returns></returns>
-        public static async Task<Week> RequestCurrentWeekAsync()
+        public static async Task<Week> RequestCurrentWeekAsync(SchRequests.FetchInfo? info = null)
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/week/";
-            string response = await SchRequests.SchRequests.RequestAsync(url);
-            Week week = SchRequests.SchRequests.DeSerializationObjFromStr<Week>(response);
+            SchRequests.FetchInfo weekInfo = new();
+            Week week = await SchRequests.SchRequests.GetAsync<Week>(url, weekInfo);
+            if (weekInfo.StaleSince is { } cachedAt)
+            {
+                info?.Add(cachedAt);
+                if (WeeksSince(cachedAt) % 2 == 1)
+                {
+                    week.week = week.reversedWeek();
+                }
+            }
             return week;
+        }
+
+        private static int WeeksSince(DateTime cachedAtUtc)
+        {
+            DateTime cachedAt = cachedAtUtc.ToLocalTime().Date;
+            DateTime now = DateTime.Now.Date;
+            DateTime cachedWeekStart = cachedAt.AddDays(-(((int)cachedAt.DayOfWeek + 6) % 7));
+            DateTime nowWeekStart = now.AddDays(-GetCurDayOfWeek());
+            return (int)((nowWeekStart - cachedWeekStart).TotalDays / 7);
         }
     }
     public static class StudentMethods
@@ -211,11 +228,10 @@ namespace API
         /// </summary>
         /// <param name="groupID"></param>
         /// <returns>Ordered by day of week and time week schedule</returns>
-        public static async Task<List<(Lesson, List<Curriculum>)>> RequestWeekScheduleAsync(int groupID)
+        public static async Task<List<(Lesson, List<Curriculum>)>> RequestWeekScheduleAsync(int groupID, SchRequests.FetchInfo? info = null)
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/schedule/group/" + groupID;
-            string response = await SchRequests.SchRequests.RequestAsync(url);
-            var schedule = SchRequests.SchRequests.DeSerializationObjFromStr<SchOfGroup>(response);
+            var schedule = await SchRequests.SchRequests.GetAsync<SchOfGroup>(url, info);
             var res = new List<(Lesson, List<Curriculum>)>();
             if (schedule.lessons.Count > 0)
             {
@@ -280,11 +296,10 @@ namespace API
         /// Get teachers list (not cached)
         /// </summary>
         /// <returns></returns>
-        public static async Task<Teacher[]> GetTeachersListAsync()
+        public static async Task<Teacher[]> GetTeachersListAsync(SchRequests.FetchInfo? info = null)
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/teacher/list";
-            string response = await SchRequests.SchRequests.RequestAsync(url);
-            return SchRequests.SchRequests.DeSerializationFromStr<Teacher>(response);
+            return await SchRequests.SchRequests.GetAsync<Teacher[]>(url, info);
         }
 
         /// <summary> 
@@ -321,11 +336,10 @@ namespace API
         /// </summary>
         /// <param name="teacherID"></param>
         /// <returns>Ordered by day of week and time week schedule</returns>
-		public static async Task<List<(Lesson, List<Curriculum>, List<TechGroup>)>> RequestWeekScheduleAsync(int teacherID)
+		public static async Task<List<(Lesson, List<Curriculum>, List<TechGroup>)>> RequestWeekScheduleAsync(int teacherID, SchRequests.FetchInfo? info = null)
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/schedule/teacher/" + teacherID;
-            string response = await SchRequests.SchRequests.RequestAsync(url);
-            var schedule = SchRequests.SchRequests.DeSerializationObjFromStr<SchOfTeacher>(response);
+            var schedule = await SchRequests.SchRequests.GetAsync<SchOfTeacher>(url, info);
             var res = new List<(Lesson, List<Curriculum>, List<TechGroup>)>();
             if (schedule.lessons.Count > 0)
             {
@@ -387,18 +401,16 @@ namespace API
 
     public static class GradeMethods
     {
-        public static async Task<Grade[]> GetGradesListAsync()
+        public static async Task<Grade[]> GetGradesListAsync(SchRequests.FetchInfo? info = null)
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/grade/list";
-            string response = await SchRequests.SchRequests.RequestAsync(url);
-            return SchRequests.SchRequests.DeSerializationFromStr<Grade>(response);
+            return await SchRequests.SchRequests.GetAsync<Grade[]>(url, info);
         }
 
-        public static async Task<Group[]> GetGroupsListAsync(int GradeId)
+        public static async Task<Group[]> GetGroupsListAsync(int GradeId, SchRequests.FetchInfo? info = null)
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/group/forGrade/" + GradeId;
-            string response = await SchRequests.SchRequests.RequestAsync(url);
-            return SchRequests.SchRequests.DeSerializationFromStr<Group>(response);
+            return await SchRequests.SchRequests.GetAsync<Group[]>(url, info);
         }
     }
 

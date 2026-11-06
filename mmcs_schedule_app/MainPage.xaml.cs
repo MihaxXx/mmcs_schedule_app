@@ -17,31 +17,44 @@ namespace mmcs_schedule_app
         private bool isLoading;
         private int activeRequests;
         private int? pendingGroupIndex;
+        private SchRequests.FetchInfo dataInfo = new();
+        private SchRequests.FetchInfo groupsInfo = new();
 
         // Static cached data with lazy loading
         private static API.Grade[]? _cachedGrades;
         private static API.Teacher[]? _cachedTeachers;
         private static Dictionary<int, API.Group[]> _cachedGroups = [];
 
-        public static async Task<API.Grade[]> GetGradesAsync()
+        private static async Task<T> GetMemoizedAsync<T>(T? memo, Func<SchRequests.FetchInfo, Task<T>> request, Action<T> save, SchRequests.FetchInfo? info) where T : class
         {
-            return _cachedGrades ??= await API.GradeMethods.GetGradesListAsync();
-        }
-
-        public static async Task<API.Teacher[]> GetTeachersAsync()
-        {
-            return _cachedTeachers ??= await API.TeacherMethods.GetTeachersListAsync();
-        }
-
-        public static async Task<API.Group[]> GetGroupsAsync(int gradeId)
-        {
-            if (!_cachedGroups.TryGetValue(gradeId, out API.Group[]? groups))
+            if (memo is not null)
             {
-                groups = await API.GradeMethods.GetGroupsListAsync(gradeId);
-                _cachedGroups[gradeId] = groups;
+                return memo;
             }
 
-            return groups;
+            SchRequests.FetchInfo requestInfo = new();
+            T result = await request(requestInfo);
+            info?.Merge(requestInfo);
+            if (requestInfo.StaleSince is null)
+            {
+                save(result);
+            }
+            return result;
+        }
+
+        public static Task<API.Grade[]> GetGradesAsync(SchRequests.FetchInfo? info = null)
+        {
+            return GetMemoizedAsync(_cachedGrades, API.GradeMethods.GetGradesListAsync, grades => _cachedGrades = grades, info);
+        }
+
+        public static Task<API.Teacher[]> GetTeachersAsync(SchRequests.FetchInfo? info = null)
+        {
+            return GetMemoizedAsync(_cachedTeachers, API.TeacherMethods.GetTeachersListAsync, teachers => _cachedTeachers = teachers, info);
+        }
+
+        public static Task<API.Group[]> GetGroupsAsync(int gradeId, SchRequests.FetchInfo? info = null)
+        {
+            return GetMemoizedAsync(_cachedGroups.GetValueOrDefault(gradeId), requestInfo => API.GradeMethods.GetGroupsListAsync(gradeId, requestInfo), groups => _cachedGroups[gradeId] = groups, info);
         }
 
         protected override async void OnAppearing()
@@ -94,9 +107,13 @@ namespace mmcs_schedule_app
             SetLoading(true);
             try
             {
-                Grades = await GetGradesAsync();
-                Teachers = await GetTeachersAsync();
-                isDataLoaded = Role.IsEnabled = true;
+                SchRequests.FetchInfo info = new();
+                Grades = await GetGradesAsync(info);
+                Teachers = await GetTeachersAsync(info);
+                dataInfo = info;
+                isDataLoaded = info.StaleSince is null;
+                Role.IsEnabled = true;
+                ShowStale();
                 return true;
             }
             catch (SchRequests.ScheduleUnavailableException)
@@ -123,6 +140,15 @@ namespace mmcs_schedule_app
             Retry_btn.IsVisible = isShown && canRetry;
         }
 
+        private void ShowStale()
+        {
+            SchRequests.FetchInfo combined = new();
+            combined.Merge(dataInfo);
+            combined.Merge(groupsInfo);
+            combined.ShowOn(StaleLabel);
+            Retry_btn.IsVisible = dataInfo.StaleSince is not null;
+        }
+
         private async Task LoadGroupsAsync(int gradeIndex)
         {
             List_Groups.IsEnabled = false;
@@ -130,11 +156,15 @@ namespace mmcs_schedule_app
             List_Groups.SelectedIndex = -1;
             Ok_btn.IsEnabled = false;
             ShowError(false);
+            groupsInfo = new();
+            ShowStale();
             SetLoading(true);
             try
             {
                 API.Grade grade = Grades[gradeIndex];
-                grade.Groups = [.. await GetGroupsAsync(grade.id)];
+                SchRequests.FetchInfo info = new();
+                grade.Groups = [.. await GetGroupsAsync(grade.id, info)];
+                groupsInfo = info;
                 if (List_NmOrGr.SelectedIndex != gradeIndex)
                 {
                     return;
@@ -160,6 +190,7 @@ namespace mmcs_schedule_app
             finally
             {
                 SetLoading(false);
+                ShowStale();
             }
         }
 

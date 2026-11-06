@@ -26,6 +26,7 @@
             </Picker.ItemsSource>
         </Picker>
         <ActivityIndicator x:Name="activityIndicator" IsRunning="False" IsVisible="False"/>
+        <Label x:Name="StaleLabel" IsVisible="False" HorizontalTextAlignment="Center" Padding="5"/>
         <Label Text="Ошибка: Нет подключения" x:Name="ErrorLabel" HorizontalOptions="Center"  IsVisible="False" IsEnabled="False"/>
         <Button Text="Повторить" x:Name="Retry_btn" IsVisible="False" Clicked="Retry_btnClicked"/>
         <Button Text="ОК" x:Name="Ok_btn" IsEnabled="False" Clicked="Ok_btnClicked"/>
