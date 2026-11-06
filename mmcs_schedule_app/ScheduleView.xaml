@@ -23,9 +23,7 @@
     </ContentPage.ToolbarItems>
     <StackLayout>
         <ActivityIndicator x:Name="activityIndicator" IsRunning="False" IsVisible="False"/>
-        <Label x:Name="StaleLabel" IsVisible="False" HorizontalTextAlignment="Center" Padding="5"/>
-        <Label Text="Ошибка: Нет подключения" x:Name="ErrorLabel" HorizontalOptions="Center" IsVisible="False" IsEnabled="False"/>
-        <Button Text="Повторить" x:Name="Retry_btn" IsVisible="False" Clicked="Retry_btnClicked" Margin="10,0"/>
+        <local:StatusBanner x:Name="Banner" RetryClicked="Banner_RetryClicked"/>
         <ListView ItemsSource="{Binding GroupedShed}"
                   GroupDisplayBinding="{Binding Key}"
                   IsGroupingEnabled="True"

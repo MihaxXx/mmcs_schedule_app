@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/dotnet/2021/maui/design" 
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              mc:Ignorable="d" 
+             xmlns:local="clr-namespace:mmcs_schedule_app"
              x:Class="mmcs_schedule_app.MainPage"
              Title="Расписание">
     <StackLayout Spacing="10" Padding="10,10">
@@ -26,9 +27,7 @@
             </Picker.ItemsSource>
         </Picker>
         <ActivityIndicator x:Name="activityIndicator" IsRunning="False" IsVisible="False"/>
-        <Label x:Name="StaleLabel" IsVisible="False" HorizontalTextAlignment="Center" Padding="5"/>
-        <Label Text="Ошибка: Нет подключения" x:Name="ErrorLabel" HorizontalOptions="Center"  IsVisible="False" IsEnabled="False"/>
-        <Button Text="Повторить" x:Name="Retry_btn" IsVisible="False" Clicked="Retry_btnClicked"/>
+        <local:StatusBanner x:Name="Banner" RetryClicked="Banner_RetryClicked"/>
         <Button Text="ОК" x:Name="Ok_btn" IsEnabled="False" Clicked="Ok_btnClicked"/>
     </StackLayout>
 </ContentPage>

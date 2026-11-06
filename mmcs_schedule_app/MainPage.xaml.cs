@@ -17,6 +17,8 @@ namespace mmcs_schedule_app
         private bool isLoading;
         private int activeRequests;
         private int? pendingGroupIndex;
+        private bool loadFailed;
+        private bool groupsFailed;
         private SchRequests.FetchInfo dataInfo = new();
         private SchRequests.FetchInfo groupsInfo = new();
 
@@ -63,7 +65,7 @@ namespace mmcs_schedule_app
             await InitializeAsync();
         }
 
-        private async void Retry_btnClicked(object sender, EventArgs e)
+        private async void Banner_RetryClicked(object? sender, EventArgs e)
         {
             await InitializeAsync();
         }
@@ -103,7 +105,8 @@ namespace mmcs_schedule_app
             }
 
             isLoading = true;
-            ShowError(false);
+            loadFailed = false;
+            UpdateBanner();
             SetLoading(true);
             try
             {
@@ -113,18 +116,18 @@ namespace mmcs_schedule_app
                 dataInfo = info;
                 isDataLoaded = info.StaleSince is null;
                 Role.IsEnabled = true;
-                ShowStale();
                 return true;
             }
             catch (SchRequests.ScheduleUnavailableException)
             {
-                ShowError(true, true);
+                loadFailed = true;
                 return false;
             }
             finally
             {
                 SetLoading(false);
                 isLoading = false;
+                UpdateBanner();
             }
         }
 
@@ -134,19 +137,23 @@ namespace mmcs_schedule_app
             activityIndicator.IsRunning = activityIndicator.IsVisible = activeRequests > 0;
         }
 
-        private void ShowError(bool isShown, bool canRetry = false)
+        private void UpdateBanner()
         {
-            ErrorLabel.IsEnabled = ErrorLabel.IsVisible = isShown;
-            Retry_btn.IsVisible = isShown && canRetry;
-        }
+            if (loadFailed)
+            {
+                Banner.ShowError(true);
+                return;
+            }
+            if (groupsFailed)
+            {
+                Banner.ShowError(false);
+                return;
+            }
 
-        private void ShowStale()
-        {
             SchRequests.FetchInfo combined = new();
             combined.Merge(dataInfo);
             combined.Merge(groupsInfo);
-            combined.ShowOn(StaleLabel);
-            Retry_btn.IsVisible = dataInfo.StaleSince is not null;
+            Banner.ShowStale(combined, dataInfo.StaleSince is not null);
         }
 
         private async Task LoadGroupsAsync(int gradeIndex)
@@ -155,9 +162,9 @@ namespace mmcs_schedule_app
             List_Groups.Items.Clear();
             List_Groups.SelectedIndex = -1;
             Ok_btn.IsEnabled = false;
-            ShowError(false);
+            groupsFailed = false;
             groupsInfo = new();
-            ShowStale();
+            UpdateBanner();
             SetLoading(true);
             try
             {
@@ -185,12 +192,12 @@ namespace mmcs_schedule_app
             {
                 pendingGroupIndex = null;
                 List_NmOrGr.SelectedIndex = -1;
-                ShowError(true);
+                groupsFailed = true;
             }
             finally
             {
                 SetLoading(false);
-                ShowStale();
+                UpdateBanner();
             }
         }
 

@@ -92,7 +92,7 @@ namespace mmcs_schedule_app
             await LoadScheduleAsync();
         }
 
-        private async void Retry_btnClicked(object sender, EventArgs e)
+        private async void Banner_RetryClicked(object? sender, EventArgs e)
         {
             await LoadScheduleAsync();
         }
@@ -105,7 +105,6 @@ namespace mmcs_schedule_app
             }
 
             isLoading = true;
-            ErrorLabel.IsEnabled = ErrorLabel.IsVisible = Retry_btn.IsVisible = false;
             activityIndicator.IsRunning = activityIndicator.IsVisible = true;
             try
             {
@@ -114,12 +113,11 @@ namespace mmcs_schedule_app
                 Shed = userInfo == User.UserInfo.teacher ? await RequestTeacherLessonsAsync(info) : await RequestStudentLessonsAsync(info);
                 UpdateGroupedShed();
                 isScheduleLoaded = info.StaleSince is null;
-                info.ShowOn(StaleLabel);
-                Retry_btn.IsVisible = info.StaleSince is not null;
+                Banner.ShowStale(info, true);
             }
             catch (SchRequests.ScheduleUnavailableException)
             {
-                ErrorLabel.IsEnabled = ErrorLabel.IsVisible = Retry_btn.IsVisible = true;
+                Banner.ShowError(true);
             }
             finally
             {

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="mmcs_schedule_app.StatusBanner"
+             IsVisible="False">
+    <Grid x:Name="BannerGrid" Padding="5,10">
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Tapped="BannerTapped"/>
+        </Grid.GestureRecognizers>
+        <Label x:Name="MessageLabel"
+               HorizontalTextAlignment="Center"
+               VerticalOptions="Center"
+               Margin="44,0"/>
+        <Label x:Name="RetryIcon"
+               Text="↻"
+               FontSize="26"
+               HorizontalOptions="End"
+               VerticalOptions="Center"
+               Margin="0,0,10,0"
+               IsVisible="False"/>
+    </Grid>
+</ContentView>
