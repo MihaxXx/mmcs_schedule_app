@@ -166,10 +166,10 @@ namespace API
         /// Request current week
         /// </summary>
         /// <returns></returns>
-        public static Week RequestCurrentWeek()
+        public static async Task<Week> RequestCurrentWeekAsync()
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/week/";
-            string response = SchRequests.SchRequests.Request(url);
+            string response = await SchRequests.SchRequests.RequestAsync(url);
             Week week = SchRequests.SchRequests.DeSerializationObjFromStr<Week>(response);
             return week;
         }
@@ -211,10 +211,10 @@ namespace API
         /// </summary>
         /// <param name="groupID"></param>
         /// <returns>Ordered by day of week and time week schedule</returns>
-        public static List<(Lesson, List<Curriculum>)> RequestWeekSchedule(int groupID)
+        public static async Task<List<(Lesson, List<Curriculum>)>> RequestWeekScheduleAsync(int groupID)
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/schedule/group/" + groupID;
-            string response = SchRequests.SchRequests.Request(url);
+            string response = await SchRequests.SchRequests.RequestAsync(url);
             var schedule = SchRequests.SchRequests.DeSerializationObjFromStr<SchOfGroup>(response);
             var res = new List<(Lesson, List<Curriculum>)>();
             if (schedule.lessons.Count > 0)
@@ -321,10 +321,10 @@ namespace API
         /// </summary>
         /// <param name="teacherID"></param>
         /// <returns>Ordered by day of week and time week schedule</returns>
-		public static List<(Lesson, List<Curriculum>, List<TechGroup>)> RequestWeekSchedule(int teacherID)
+		public static async Task<List<(Lesson, List<Curriculum>, List<TechGroup>)>> RequestWeekScheduleAsync(int teacherID)
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/schedule/teacher/" + teacherID;
-            string response = SchRequests.SchRequests.Request(url);
+            string response = await SchRequests.SchRequests.RequestAsync(url);
             var schedule = SchRequests.SchRequests.DeSerializationObjFromStr<SchOfTeacher>(response);
             var res = new List<(Lesson, List<Curriculum>, List<TechGroup>)>();
             if (schedule.lessons.Count > 0)

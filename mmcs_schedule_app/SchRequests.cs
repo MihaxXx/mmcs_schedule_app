@@ -14,21 +14,6 @@ namespace SchRequests
         /// <summary>
         /// Выполнение запроса и возврат строки-ответа
         /// </summary>
-        public static string Request(string url)
-        {
-            try
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                using var response = _client.Send(request);
-                response.EnsureSuccessStatusCode();
-                return response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-            }
-            catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException)
-            {
-                throw new ScheduleUnavailableException($"Request failed: {url}", e);
-            }
-        }
-
         public static async Task<string> RequestAsync(string url, CancellationToken ct = default)
         {
             try

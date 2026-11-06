@@ -37,7 +37,7 @@ namespace mmcs_schedule_app
     }
     public partial class ScheduleView : ContentPage
     {
-        Week currentWeek;
+        Week currentWeek = new();
 
         Week selectedWeek = new Week() { week = (WeekType)2 };
 
@@ -50,6 +50,9 @@ namespace mmcs_schedule_app
         private readonly User.UserInfo userInfo;
         private readonly int userId; // teacherId or groupid
         private readonly string userHeader;
+
+        private bool isScheduleLoaded;
+        private bool isLoading;
 
         // Static cache for day names
         private static List<string> _cachedDayNames;
@@ -76,51 +79,93 @@ namespace mmcs_schedule_app
                 ToolbarItems.RemoveAt(1); // Remove Exit button
             }
 
-            if (userInfo == User.UserInfo.teacher)
-            {
-                foreach (var LLC in TeacherMethods.RequestWeekSchedule(userId))
-                {
-                    var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
-                    Shed.Add(new LessonItem(
-                        tol.ToString(),
-                        LLC.Item2[0].subjectname,
-                        (string.IsNullOrEmpty(LLC.Item1.info) ? "" : LLC.Item1.info + "\n") + (tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя"),
-                        LLC.Item2.First().roomname,
-                        string.Join("\n", LLC.Item3.Select(g => $"• {StuDegreeShort(g.degree)} {g.gradenum}.{g.groupnum}")),
-                        tol,
-                        LLC));
-                }
-            }
-            else
-            {
-                //Go thought list of lessons (present timeslots for group)
-                foreach (var LLC in StudentMethods.RequestWeekSchedule(userId))
-                {
-                    var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
-                    //Go thought list of Curriculums (present subj for timeslot)
-                    foreach (var LC in LLC.Item2.ToLookup(lc => lc.subjectid).Select(coll => coll.First()))
-                    {
-                        var FilteredCurs = LLC.Item2.Where(c => c.subjectid == LC.subjectid).ToList();
-
-                        Shed.Add(new LessonItem(
-                            tol.ToString(),
-                            LC.subjectname,
-                            (string.IsNullOrEmpty(LLC.Item1.info) ? "" : LLC.Item1.info + "\n") + (tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя"),
-                            FilteredCurs.Count > 2 ? "..." : string.Join("\n", FilteredCurs.Select(curs => curs.roomname)),
-                            string.Join("\n", FilteredCurs.Select(c => $"• {c.teachername}\n  {c.roomname}")),
-                            tol,
-                            (LLC.Item1, FilteredCurs)));
-                    }
-                }
-            }
             //Gets russian day names, possible to use CurrentInfo, but app has no localization, so no reason for that
             DayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames.ToList();
-            currentWeek = CurrentSubject.RequestCurrentWeek();
-
-            UpdateGroupedShed();
 
             //Must be at the end!!!
             BindingContext = this;
+        }
+
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            await LoadScheduleAsync();
+        }
+
+        private async void Retry_btnClicked(object sender, EventArgs e)
+        {
+            await LoadScheduleAsync();
+        }
+
+        private async Task LoadScheduleAsync()
+        {
+            if (isScheduleLoaded || isLoading)
+            {
+                return;
+            }
+
+            isLoading = true;
+            ErrorLabel.IsEnabled = ErrorLabel.IsVisible = Retry_btn.IsVisible = false;
+            activityIndicator.IsRunning = activityIndicator.IsVisible = true;
+            try
+            {
+                currentWeek = await CurrentSubject.RequestCurrentWeekAsync();
+                Shed = userInfo == User.UserInfo.teacher ? await RequestTeacherLessonsAsync() : await RequestStudentLessonsAsync();
+                UpdateGroupedShed();
+                isScheduleLoaded = true;
+            }
+            catch (SchRequests.ScheduleUnavailableException)
+            {
+                ErrorLabel.IsEnabled = ErrorLabel.IsVisible = Retry_btn.IsVisible = true;
+            }
+            finally
+            {
+                activityIndicator.IsRunning = activityIndicator.IsVisible = false;
+                isLoading = false;
+            }
+        }
+
+        private async Task<List<LessonItem>> RequestTeacherLessonsAsync()
+        {
+            List<LessonItem> lessons = [];
+            foreach (var LLC in await TeacherMethods.RequestWeekScheduleAsync(userId))
+            {
+                var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
+                lessons.Add(new LessonItem(
+                    tol.ToString(),
+                    LLC.Item2[0].subjectname,
+                    (string.IsNullOrEmpty(LLC.Item1.info) ? "" : LLC.Item1.info + "\n") + (tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя"),
+                    LLC.Item2.First().roomname,
+                    string.Join("\n", LLC.Item3.Select(g => $"• {StuDegreeShort(g.degree)} {g.gradenum}.{g.groupnum}")),
+                    tol,
+                    LLC));
+            }
+            return lessons;
+        }
+
+        private async Task<List<LessonItem>> RequestStudentLessonsAsync()
+        {
+            List<LessonItem> lessons = [];
+            //Go thought list of lessons (present timeslots for group)
+            foreach (var LLC in await StudentMethods.RequestWeekScheduleAsync(userId))
+            {
+                var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
+                //Go thought list of Curriculums (present subj for timeslot)
+                foreach (var LC in LLC.Item2.ToLookup(lc => lc.subjectid).Select(coll => coll.First()))
+                {
+                    var FilteredCurs = LLC.Item2.Where(c => c.subjectid == LC.subjectid).ToList();
+
+                    lessons.Add(new LessonItem(
+                        tol.ToString(),
+                        LC.subjectname,
+                        (string.IsNullOrEmpty(LLC.Item1.info) ? "" : LLC.Item1.info + "\n") + (tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя"),
+                        FilteredCurs.Count > 2 ? "..." : string.Join("\n", FilteredCurs.Select(curs => curs.roomname)),
+                        string.Join("\n", FilteredCurs.Select(c => $"• {c.teachername}\n  {c.roomname}")),
+                        tol,
+                        (LLC.Item1, FilteredCurs)));
+                }
+            }
+            return lessons;
         }
 
         private void UpdateGroupedShed()
@@ -156,10 +201,6 @@ namespace mmcs_schedule_app
             }
         }
 
-        protected override void OnAppearing()
-        {
-
-        }
         async private void OnExitClicked(object sender, EventArgs e)
         {
             Navigation.InsertPageBefore(new MainPage(), this);
