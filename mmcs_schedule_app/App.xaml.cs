@@ -6,7 +6,7 @@ namespace mmcs_schedule_app
 {
     public partial class App : Application
     {
-        public const string host = "http://schedule.sfedu.ru";
+        public const string host = "https://schedule.sfedu.ru";
 
         public static User user;
 

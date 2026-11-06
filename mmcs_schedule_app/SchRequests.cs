@@ -43,6 +43,12 @@ namespace SchRequests
         private static readonly string _cacheDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "cache");
 
         /// <summary>
+        /// Set once HTTPS fails without an HTTP status but plain HTTP works (missing root certificate on old devices,
+        /// self-signed or expired certificate); requests then go over HTTP for the rest of the session.
+        /// </summary>
+        private static bool _useCleartext;
+
+        /// <summary>
         /// Requests <paramref name="url"/> and deserializes the JSON response. A valid response is cached on disk;
         /// if the request fails, the last cached response is returned and its date is added to <paramref name="info"/>.
         /// </summary>
@@ -76,9 +82,24 @@ namespace SchRequests
         {
             try
             {
-                return await _client.GetStringAsync(url, ct);
+                return await _client.GetStringAsync(_useCleartext ? ToCleartext(url) : url, ct);
             }
-            catch (Exception e) when (e is HttpRequestException or IOException || (e is TaskCanceledException && !ct.IsCancellationRequested))
+            catch (HttpRequestException e) when (e.StatusCode is null && CanFallBackToCleartext(url))
+            {
+                string response;
+                try
+                {
+                    response = await _client.GetStringAsync(ToCleartext(url), ct);
+                }
+                catch (Exception fallbackError) when (IsRequestFailure(fallbackError, ct))
+                {
+                    throw new ScheduleUnavailableException($"Request failed: {url}", e);
+                }
+
+                _useCleartext = true;
+                return response;
+            }
+            catch (Exception e) when (IsRequestFailure(e, ct))
             {
                 throw new ScheduleUnavailableException($"Request failed: {url}", e);
             }
@@ -100,9 +121,27 @@ namespace SchRequests
             }
         }
 
+        private static string ToCleartext(string url)
+        {
+            return url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? "http://" + url["https://".Length..] : url;
+        }
+
+        private static bool CanFallBackToCleartext(string url)
+        {
+            return !_useCleartext
+                && url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                && (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS());
+        }
+
+        private static bool IsRequestFailure(Exception e, CancellationToken ct)
+        {
+            return e is HttpRequestException or IOException || (e is TaskCanceledException && !ct.IsCancellationRequested);
+        }
+
         private static string GetCachePath(string url)
         {
-            return Path.Combine(_cacheDirectory, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(url))) + ".json");
+            Uri uri = new(url);
+            return Path.Combine(_cacheDirectory, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(uri.Host + uri.PathAndQuery))) + ".json");
         }
 
         /// <summary>

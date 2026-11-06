@@ -48,5 +48,16 @@
 	<string>mmcs_schedule_app</string>
 	<key>MinimumOSVersion</key>
 	<string>12.2</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>schedule.sfedu.ru</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
 </dict>
 </plist>
