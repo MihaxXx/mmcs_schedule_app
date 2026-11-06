@@ -7,7 +7,7 @@
              x:Class="mmcs_schedule_app.MainPage"
              Title="Расписание">
     <StackLayout Spacing="10" Padding="10,10">
-        <Picker Title="Студент / Преподаватель" x:Name="Role" VerticalOptions="Start" SelectedIndexChanged="Role_SelectedIndexChanged" >
+        <Picker Title="Студент / Преподаватель" x:Name="Role" IsEnabled="False" VerticalOptions="Start" SelectedIndexChanged="Role_SelectedIndexChanged" >
             <Picker.ItemsSource>
                 <x:Array Type="{x:Type x:String}">
                     <x:String>Студент</x:String>
@@ -25,7 +25,9 @@
             <Picker.ItemsSource>
             </Picker.ItemsSource>
         </Picker>
+        <ActivityIndicator x:Name="activityIndicator" IsRunning="False" IsVisible="False"/>
         <Label Text="Ошибка: Нет подключения" x:Name="ErrorLabel" HorizontalOptions="Center"  IsVisible="False" IsEnabled="False"/>
+        <Button Text="Повторить" x:Name="Retry_btn" IsVisible="False" Clicked="Retry_btnClicked"/>
         <Button Text="ОК" x:Name="Ok_btn" IsEnabled="False" Clicked="Ok_btnClicked"/>
     </StackLayout>
 </ContentPage>

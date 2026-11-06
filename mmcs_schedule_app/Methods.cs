@@ -280,10 +280,10 @@ namespace API
         /// Get teachers list (not cached)
         /// </summary>
         /// <returns></returns>
-        public static Teacher[] GetTeachersList()
+        public static async Task<Teacher[]> GetTeachersListAsync()
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/teacher/list";
-            string response = SchRequests.SchRequests.Request(url);
+            string response = await SchRequests.SchRequests.RequestAsync(url);
             return SchRequests.SchRequests.DeSerializationFromStr<Teacher>(response);
         }
 
@@ -387,17 +387,17 @@ namespace API
 
     public static class GradeMethods
     {
-        public static Grade[] GetGradesList()
+        public static async Task<Grade[]> GetGradesListAsync()
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/grade/list";
-            string response = SchRequests.SchRequests.Request(url);
+            string response = await SchRequests.SchRequests.RequestAsync(url);
             return SchRequests.SchRequests.DeSerializationFromStr<Grade>(response);
         }
 
-        public static Group[] GetGroupsList(int GradeId)
+        public static async Task<Group[]> GetGroupsListAsync(int GradeId)
         {
             string url = mmcs_schedule_app.App.host + "/APIv1/group/forGrade/" + GradeId;
-            string response = SchRequests.SchRequests.Request(url);
+            string response = await SchRequests.SchRequests.RequestAsync(url);
             return SchRequests.SchRequests.DeSerializationFromStr<Group>(response);
         }
     }

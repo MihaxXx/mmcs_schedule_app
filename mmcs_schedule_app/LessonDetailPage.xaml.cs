@@ -104,7 +104,16 @@ namespace mmcs_schedule_app
 
         private async Task OnTeacherTapped(int teacherId)
         {
-            var teacher = MainPage.GetTeachers().FirstOrDefault(t => t.id == teacherId);
+            Teacher? teacher;
+            try
+            {
+                teacher = (await MainPage.GetTeachersAsync()).FirstOrDefault(t => t.id == teacherId);
+            }
+            catch (SchRequests.ScheduleUnavailableException)
+            {
+                await ShowUnavailableAlert();
+                return;
+            }
             if (teacher == null)
                 return;
 
@@ -116,11 +125,20 @@ namespace mmcs_schedule_app
 
         private async Task OnGroupTapped(TechGroup techGroup)
         {
-            var grade = MainPage.GetGrades().FirstOrDefault(g => g.num == techGroup.gradenum && g.degree == techGroup.degree);
-            if (grade == null)
-                return;
+            Group? group;
+            try
+            {
+                Grade? grade = (await MainPage.GetGradesAsync()).FirstOrDefault(g => g.num == techGroup.gradenum && g.degree == techGroup.degree);
+                if (grade == null)
+                    return;
 
-            var group = MainPage.GetGroups(grade.id).FirstOrDefault(g => g.num == techGroup.groupnum && g.name == techGroup.name);
+                group = (await MainPage.GetGroupsAsync(grade.id)).FirstOrDefault(g => g.num == techGroup.groupnum && g.name == techGroup.name);
+            }
+            catch (SchRequests.ScheduleUnavailableException)
+            {
+                await ShowUnavailableAlert();
+                return;
+            }
             if (group == null)
                 return;
 
@@ -139,6 +157,11 @@ namespace mmcs_schedule_app
 
             var scheduleView = new ScheduleView(userInfo, group.id, header, true);
             await parentNavigation.PushAsync(scheduleView);
+        }
+
+        private async Task ShowUnavailableAlert()
+        {
+            await DisplayAlertAsync("Ошибка", "Нет подключения", "OK");
         }
 
         private async Task ClosePopup()

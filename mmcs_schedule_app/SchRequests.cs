@@ -2,10 +2,6 @@
 
 namespace SchRequests
 {
-    /// <summary>
-    /// Thrown when schedule data can't be obtained or parsed:
-    /// no connection, timeout, HTTP error status or a malformed (non-JSON) response.
-    /// </summary>
     public class ScheduleUnavailableException : Exception
     {
         public ScheduleUnavailableException(string message, Exception? inner = null) : base(message, inner) { }
@@ -16,9 +12,8 @@ namespace SchRequests
         private static readonly HttpClient _client = new() { Timeout = TimeSpan.FromSeconds(10) };
 
         /// <summary>
-        /// Выполнение запроса и возврат строки-ответа (синхронно)
+        /// Выполнение запроса и возврат строки-ответа
         /// </summary>
-        /// <exception cref="ScheduleUnavailableException"/>
         public static string Request(string url)
         {
             try
@@ -34,10 +29,6 @@ namespace SchRequests
             }
         }
 
-        /// <summary>
-        /// Выполнение запроса и возврат строки-ответа (асинхронно)
-        /// </summary>
-        /// <exception cref="ScheduleUnavailableException"/>
         public static async Task<string> RequestAsync(string url, CancellationToken ct = default)
         {
             try
@@ -53,7 +44,6 @@ namespace SchRequests
         /// <summary>
         /// Десериализация в объект по строке
         /// </summary>
-        /// <exception cref="ScheduleUnavailableException"/>
         public static T DeSerializationObjFromStr<T>(string str) where T : class
         {
             try
@@ -70,7 +60,6 @@ namespace SchRequests
         /// <summary>
         /// Десериализация в массив объектов по строке
         /// </summary>
-        /// <exception cref="ScheduleUnavailableException"/>
         public static T[] DeSerializationFromStr<T>(string str)
         {
             try

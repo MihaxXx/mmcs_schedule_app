@@ -9,57 +9,157 @@ namespace mmcs_schedule_app
     [DesignTimeVisible(false)]
     public partial class MainPage : ContentPage
     {
-        API.Grade[] Grades;
-        API.Teacher[] Teachers;
+        private API.Grade[] Grades = [];
+        private API.Teacher[] Teachers = [];
         API.User user = new API.User();
 
+        private bool isDataLoaded;
+        private bool isLoading;
+        private int activeRequests;
+        private int? pendingGroupIndex;
+
         // Static cached data with lazy loading
-        private static API.Grade[] _cachedGrades;
-        private static API.Teacher[] _cachedTeachers;
+        private static API.Grade[]? _cachedGrades;
+        private static API.Teacher[]? _cachedTeachers;
         private static Dictionary<int, API.Group[]> _cachedGroups = [];
 
-        public static API.Grade[] GetGrades()
+        public static async Task<API.Grade[]> GetGradesAsync()
         {
-            if (_cachedGrades == null)
-            {
-                _cachedGrades = API.GradeMethods.GetGradesList();
-            }
-            return _cachedGrades;
+            return _cachedGrades ??= await API.GradeMethods.GetGradesListAsync();
         }
 
-        public static API.Teacher[] GetTeachers()
+        public static async Task<API.Teacher[]> GetTeachersAsync()
         {
-            if (_cachedTeachers == null)
-            {
-                _cachedTeachers = API.TeacherMethods.GetTeachersList();
-            }
-            return _cachedTeachers;
+            return _cachedTeachers ??= await API.TeacherMethods.GetTeachersListAsync();
         }
 
-        public static API.Group[] GetGroups(int gradeId)
+        public static async Task<API.Group[]> GetGroupsAsync(int gradeId)
         {
-            if (!_cachedGroups.TryGetValue(gradeId, out var groups))
+            if (!_cachedGroups.TryGetValue(gradeId, out API.Group[]? groups))
             {
-                _cachedGroups[gradeId] = API.GradeMethods.GetGroupsList(gradeId);
+                groups = await API.GradeMethods.GetGroupsListAsync(gradeId);
+                _cachedGroups[gradeId] = groups;
             }
 
-            return _cachedGroups[gradeId];
+            return groups;
         }
 
-        protected override void OnAppearing()
+        protected override async void OnAppearing()
         {
             base.OnAppearing();
+            await InitializeAsync();
+        }
+
+        private async void Retry_btnClicked(object sender, EventArgs e)
+        {
+            await InitializeAsync();
+        }
+
+        private async Task InitializeAsync()
+        {
+            if (!await LoadDataAsync())
+            {
+                return;
+            }
 
             if (App._isLoggedIn)
             {
                 user = App.user;
-                Role.SelectedIndex = user.Info == API.User.UserInfo.teacher ? 1 : 0;
+                bool isTeacher = user.Info == API.User.UserInfo.teacher;
+                Role.SelectedIndex = isTeacher ? 1 : 0;
+                if (!isTeacher)
+                {
+                    pendingGroupIndex = user.list2selID;
+                }
                 List_NmOrGr.SelectedIndex = user.list1selID;
-                if (user.Info != API.User.UserInfo.teacher)
-                    List_Groups.SelectedIndex = user.list2selID;
                 App._isLoggedIn = false;
                 File.Delete(App._fileName);
                 App.user = new API.User();
+            }
+        }
+
+        private async Task<bool> LoadDataAsync()
+        {
+            if (isDataLoaded)
+            {
+                return true;
+            }
+            if (isLoading)
+            {
+                return false;
+            }
+
+            isLoading = true;
+            ShowError(false);
+            SetLoading(true);
+            try
+            {
+                Grades = await GetGradesAsync();
+                Teachers = await GetTeachersAsync();
+                isDataLoaded = Role.IsEnabled = true;
+                return true;
+            }
+            catch (SchRequests.ScheduleUnavailableException)
+            {
+                ShowError(true, true);
+                return false;
+            }
+            finally
+            {
+                SetLoading(false);
+                isLoading = false;
+            }
+        }
+
+        private void SetLoading(bool isLoading)
+        {
+            activeRequests += isLoading ? 1 : -1;
+            activityIndicator.IsRunning = activityIndicator.IsVisible = activeRequests > 0;
+        }
+
+        private void ShowError(bool isShown, bool canRetry = false)
+        {
+            ErrorLabel.IsEnabled = ErrorLabel.IsVisible = isShown;
+            Retry_btn.IsVisible = isShown && canRetry;
+        }
+
+        private async Task LoadGroupsAsync(int gradeIndex)
+        {
+            List_Groups.IsEnabled = false;
+            List_Groups.Items.Clear();
+            List_Groups.SelectedIndex = -1;
+            Ok_btn.IsEnabled = false;
+            ShowError(false);
+            SetLoading(true);
+            try
+            {
+                API.Grade grade = Grades[gradeIndex];
+                grade.Groups = [.. await GetGroupsAsync(grade.id)];
+                if (List_NmOrGr.SelectedIndex != gradeIndex)
+                {
+                    return;
+                }
+
+                foreach (API.Group g in grade.Groups)
+                {
+                    List_Groups.Items.Add(g.name + " группа " + g.num);
+                }
+                List_Groups.IsEnabled = true;
+                if (pendingGroupIndex is { } pendingIndex && pendingIndex < grade.Groups.Count)
+                {
+                    List_Groups.SelectedIndex = pendingIndex;
+                }
+                pendingGroupIndex = null;
+            }
+            catch (SchRequests.ScheduleUnavailableException)
+            {
+                pendingGroupIndex = null;
+                List_NmOrGr.SelectedIndex = -1;
+                ShowError(true);
+            }
+            finally
+            {
+                SetLoading(false);
             }
         }
 
@@ -67,17 +167,6 @@ namespace mmcs_schedule_app
         public MainPage()
         {
             InitializeComponent();
-            try
-            {
-                Grades = GetGrades();
-                Teachers = GetTeachers();
-                ErrorLabel.IsEnabled = ErrorLabel.IsVisible = false;
-            }
-            catch (SchRequests.ScheduleUnavailableException)
-            {
-                ErrorLabel.IsEnabled = ErrorLabel.IsVisible = true;
-            }
-
         }
         private void Role_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -104,7 +193,7 @@ namespace mmcs_schedule_app
             List_Groups.IsEnabled = false;
             Ok_btn.IsEnabled = false;
         }
-        private void List_NmOrGr_SelectedIndexChanged(object sender, EventArgs e)
+        private async void List_NmOrGr_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (sender is not Picker picker || picker.SelectedIndex == -1)
                 return;
@@ -126,25 +215,7 @@ namespace mmcs_schedule_app
                     case "postgraduate": user.Info = API.User.UserInfo.graduate; break;
                 }
                 user.course = Grades[List_NmOrGr.SelectedIndex].num;
-                try
-                {
-                    for (int i = 0; i < Grades.Length; i++)
-                    {
-                        Grades[i].Groups = [.. GetGroups(Grades[i].id)];
-                    }
-
-                    List_Groups.IsEnabled = true;
-                    List_Groups.Items.Clear();
-                    foreach (var g in Grades[List_NmOrGr.SelectedIndex].Groups)
-                        List_Groups.Items.Add(g.name + " группа " + g.num);
-                    List_Groups.SelectedIndex = -1;
-                    Ok_btn.IsEnabled = false;
-                    ErrorLabel.IsEnabled = ErrorLabel.IsVisible = false;
-                }
-                catch (SchRequests.ScheduleUnavailableException)
-                {
-                    ErrorLabel.IsEnabled = ErrorLabel.IsVisible = true;
-                }
+                await LoadGroupsAsync(List_NmOrGr.SelectedIndex);
             }
         }
         private void List_Groups_SelectedIndexChanged(object sender, EventArgs e)
