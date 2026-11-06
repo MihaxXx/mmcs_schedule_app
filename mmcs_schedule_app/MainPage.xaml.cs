@@ -73,7 +73,7 @@ namespace mmcs_schedule_app
                 Teachers = GetTeachers();
                 ErrorLabel.IsEnabled = ErrorLabel.IsVisible = false;
             }
-            catch (System.Net.WebException)
+            catch (SchRequests.ScheduleUnavailableException)
             {
                 ErrorLabel.IsEnabled = ErrorLabel.IsVisible = true;
             }
@@ -141,7 +141,7 @@ namespace mmcs_schedule_app
                     Ok_btn.IsEnabled = false;
                     ErrorLabel.IsEnabled = ErrorLabel.IsVisible = false;
                 }
-                catch (System.Net.WebException)
+                catch (SchRequests.ScheduleUnavailableException)
                 {
                     ErrorLabel.IsEnabled = ErrorLabel.IsVisible = true;
                 }
