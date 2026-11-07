@@ -1,0 +1,70 @@
+root = true
+
+[*.cs]
+# Wrap lines longer than 110 characters
+max_line_length = 110
+
+# Always use braces, even for single-statement if/else/foreach/for/while
+csharp_prefer_braces = true:warning
+
+# Always spell types out instead of using var
+csharp_style_var_for_built_in_types = false:warning
+csharp_style_var_when_type_is_apparent = false:warning
+csharp_style_var_elsewhere = false:warning
+
+# Prefer collection expressions ([] and [.. items]) over new List<T>() and ToList()
+dotnet_style_prefer_collection_expression = true:suggestion
+
+# No redundant parentheses in arithmetic and comparisons; keep them to group && and ||
+dotnet_style_parentheses_in_arithmetic_binary_operators = never_if_unnecessary:warning
+dotnet_style_parentheses_in_relational_binary_operators = never_if_unnecessary:warning
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:silent
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary:suggestion
+
+# Prefer file-scoped namespaces
+csharp_style_namespace_declarations = file_scoped:suggestion
+
+# Naming styles
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_naming_style.camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+
+# Naming symbols
+dotnet_naming_symbols.private_static_fields.applicable_kinds = field
+dotnet_naming_symbols.private_static_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_fields.required_modifiers = static
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_symbols.non_private_members.applicable_kinds = field, property, method, event
+dotnet_naming_symbols.non_private_members.applicable_accessibilities = public, internal, protected, protected_internal
+dotnet_naming_symbols.types.applicable_kinds = class, struct, interface, enum, delegate
+
+# Naming rules (first match wins): private static fields _camelCase, other private fields camelCase,
+# everything else that is visible, plus constants and types, PascalCase
+dotnet_naming_rule.private_static_fields_underscore.symbols = private_static_fields
+dotnet_naming_rule.private_static_fields_underscore.style = underscore_camel_case
+dotnet_naming_rule.private_static_fields_underscore.severity = warning
+dotnet_naming_rule.private_fields_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_camel_case.style = camel_case
+dotnet_naming_rule.private_fields_camel_case.severity = warning
+dotnet_naming_rule.constants_pascal_case.symbols = constants
+dotnet_naming_rule.constants_pascal_case.style = pascal_case
+dotnet_naming_rule.constants_pascal_case.severity = warning
+dotnet_naming_rule.non_private_members_pascal_case.symbols = non_private_members
+dotnet_naming_rule.non_private_members_pascal_case.style = pascal_case
+dotnet_naming_rule.non_private_members_pascal_case.severity = warning
+dotnet_naming_rule.types_pascal_case.symbols = types
+dotnet_naming_rule.types_pascal_case.style = pascal_case
+dotnet_naming_rule.types_pascal_case.severity = warning
+
+# An exception escaping an async void method crashes the app. UI handlers run their async work through
+# PageExtensions.RunSafelyAsync instead; a new async void handler that skips it shows up here.
+resharper_async_void_method_highlighting = suggestion
+resharper_async_void_lambda_highlighting = suggestion
+resharper_async_void_event_handler_method_highlighting = suggestion
+
+# The "another GetEnumerator" variant suggests a rewrite that changes which enumerator is used
+resharper_foreach_can_be_converted_to_query_using_another_get_enumerator_highlighting = none
