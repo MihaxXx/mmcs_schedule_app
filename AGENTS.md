@@ -13,3 +13,7 @@
 ## UI handlers
 
 - Don't write `async void` event handlers. Run their async work through `this.RunSafelyAsync(...)`, so an unexpected exception shows an alert instead of crashing the app.
+
+## Commits and pull requests
+
+- Do not add AI attribution anywhere: no `Co-Authored-By` trailers for AI assistants and no "Generated with ..." lines in commit messages or pull request descriptions.
