@@ -9,3 +9,7 @@
 ## API methods
 
 - One method per request. Don't keep sync and async variants side by side; use the async one with the `Async` suffix.
+
+## UI handlers
+
+- Don't write `async void` event handlers. Run their async work through `this.RunSafelyAsync(...)`, so an unexpected exception shows an alert instead of crashing the app.

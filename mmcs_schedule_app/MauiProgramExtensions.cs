@@ -1,24 +1,23 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace mmcs_schedule_app
+namespace mmcs_schedule_app;
+
+public static class MauiProgramExtensions
 {
-    public static class MauiProgramExtensions
+    public static MauiAppBuilder UseSharedMauiApp(this MauiAppBuilder builder)
     {
-        public static MauiAppBuilder UseSharedMauiApp(this MauiAppBuilder builder)
-        {
-            builder
-                .UseMauiApp<App>()
-                .ConfigureFonts(fonts =>
-                {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-                });
+        builder
+            .UseMauiApp<App>()
+            .ConfigureFonts(fonts =>
+            {
+                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+            });
 
 #if DEBUG
-    		builder.Logging.AddDebug();
+		builder.Logging.AddDebug();
 #endif
 
-            return builder;
-        }
+        return builder;
     }
 }

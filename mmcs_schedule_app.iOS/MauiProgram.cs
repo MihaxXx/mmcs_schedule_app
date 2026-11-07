@@ -1,15 +1,14 @@
-﻿namespace mmcs_schedule_app.iOS
+﻿namespace mmcs_schedule_app.iOS;
+
+public static class MauiProgram
 {
-    public static class MauiProgram
+    public static MauiApp CreateMauiApp()
     {
-        public static MauiApp CreateMauiApp()
-        {
-            var builder = MauiApp.CreateBuilder();
+        MauiAppBuilder builder = MauiApp.CreateBuilder();
 
-            builder
-                .UseSharedMauiApp();
+        builder
+            .UseSharedMauiApp();
 
-            return builder.Build();
-        }
+        return builder.Build();
     }
 }

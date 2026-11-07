@@ -1,417 +1,200 @@
-﻿using static API.CurrentSubject;
+﻿namespace API;
 
-namespace API
+/// <summary>
+/// Time-slot struct
+/// </summary>
+public class TimeOfLesson
 {
-    public class Elective
+    //0..6 = пн..вс
+    public int Day { get; set; }
+    public int StartHour { get; set; }
+    public int StartMinute { get; set; }
+    public int FinishHour { get; set; }
+    public int FinishMinute { get; set; }
+    //"full" = -1,"upper"= 0, "lower"= 1
+    public int Week { get; set; }
+
+    public string WeekName => Week switch
     {
-        public string name { get; set; }
-        public string teacher { get; set; }
-        public string day { get; set; }
-        public string time { get; set; }
-        public int? room { get; set; }
-        public string url { get; set; }
+        -1 => "",
+        0 => "верхняя неделя",
+        _ => "нижняя неделя"
+    };
 
-        public Elective(string n, string teach, string d, string t, string r, string u)
-        {
-            name = n;
-            teacher = teach;
-            day = d;
-            time = t;
-            if (int.TryParse(r, out var tmp))
-                room = tmp;
-            else
-                room = null;
-            url = u;
-        }
+    public override string ToString()
+    {
+        return $"{StartHour:D2}:{StartMinute:D2}\n{FinishHour:D2}:{FinishMinute:D2}";
+    }
 
-        public override string ToString()
-        {
-            return
-                $"*{name}* \n" +
-                $"{(day == "уточняйте" ? "День уточняйте" : $"*{day}*")}, " +
-                $"{(time == "уточняйте" ? "начало уточняйте" : $"*{time}*")} " +
-                $"\n    преп. _{teacher}_, " +
-                $"{(!room.HasValue ? "ауд уточняйте" : $"ауд. {room}")} " +
-                $"{(url != "" ? $"\n ссылка: {url}" : "")} \n\n";
-        }
-
-        static public IEnumerable<Elective> GetElectives(string fName = "Electives.csv")
-        {
-            return File.ReadLines(fName).Select(x => x.Split(';')).
-                Select(l => new Elective(l[0], l[1], l[2], l[3], l[4], l[5]));
-        }
-
-        static public string ElectivesToString(IEnumerable<Elective> ie)
-        {
-            string ans = "";
-            foreach (var x in ie)
-            {
-                ans += x;
-            }
-            return ans;
-        }
+    /// <summary>
+    /// Silent convert time units from string to integer
+    /// </summary>
+    /// <param name="time"></param>
+    /// <returns></returns>
+    private static int ToIntegerTime(string time)
+    {
+        return int.TryParse(time, out int parsed) ? parsed : -1;
     }
     /// <summary>
-    /// Time-slot struct
+    /// Converts the string representation of a time-slot to its TimeOfLesson equivalent.
     /// </summary>
-    public class TimeOfLesson
+    /// <param name="s">A string containing a time-slot to convert.</param>
+    /// <returns></returns>
+    public static TimeOfLesson Parse(string s)
     {
-        public static Week curWeek { get; set; }
-        //0..6 = пн..вс
-        public int day { get; set; }
-        public int starth { get; set; }
-        public int startm { get; set; }
-        public int finishh { get; set; }
-        public int finishm { get; set; }
-        //"full" = -1,"upper"= 0, "lower"= 1
-        public int week { get; set; }
+        s = s[1..^1];
+        TimeOfLesson t = new();
+        string[] times = s.Split(',');
+        t.Day = ToIntegerTime(times[0]);
+        t.StartHour = ToIntegerTime(times[1][..2]);
+        t.StartMinute = ToIntegerTime(times[1][3..5]);
+        t.FinishHour = ToIntegerTime(times[2][..2]);
+        t.FinishMinute = ToIntegerTime(times[2][3..5]);
+        t.Week = times[3] switch
+        {
+            "full" => -1,
+            "upper" => 0,
+            "lower" => 1,
+            _ => 0
+        };
+        return t;
+    }
+}
 
-        public override string ToString()
-        {
-            return $"{starth:D2}:{startm:D2}\n{finishh:D2}:{finishm:D2}";
-        }
+public static class WeekMethods
+{
+    public static int GetCurDayOfWeek() => ((int)DateTime.Now.DayOfWeek + 6) % 7;
 
-        public bool Equals(TimeOfLesson other)
+    /// <summary>
+    /// Request current week
+    /// </summary>
+    /// <returns></returns>
+    public static async Task<Week> RequestCurrentWeekAsync(SchRequests.FetchInfo? info = null)
+    {
+        const string url = mmcs_schedule_app.App.Host + "/APIv1/week/";
+        SchRequests.FetchInfo weekInfo = new();
+        Week week = await SchRequests.SchRequests.GetAsync<Week>(url, weekInfo);
+        if (weekInfo.StaleSince is { } cachedAt)
         {
-            return string.Equals(this.ToString(), other.ToString());
-        }
-        /// <summary>
-        /// Silent convert time units from string to integer
-        /// </summary>
-        /// <param name="time"></param>
-        /// <returns></returns>
-        private static int ToIntegerTime(string time)
-        {
-            return int.TryParse(time, out int int_x) ? int_x : -1;
-        }
-        /// <summary>
-        /// Converts the string representation of a time-slot to its TimeOfLesson equivalent.
-        /// </summary>
-        /// <param name="s">A string containing a time-slot to convert.</param>
-        /// <returns></returns>
-        public static TimeOfLesson Parse(string s)
-        {
-            s = s.Substring(1, s.Length - 2);
-            TimeOfLesson t = new TimeOfLesson();
-            string[] times = s.Split(',');
-            t.day = ToIntegerTime(times[0]);
-            t.starth = ToIntegerTime(times[1].Substring(0, 2));
-            t.startm = ToIntegerTime(times[1].Substring(3, 2));
-            t.finishh = ToIntegerTime(times[2].Substring(0, 2));
-            t.finishm = ToIntegerTime(times[2].Substring(3, 2));
-            switch (times[3])
+            info?.Add(cachedAt);
+            if (WeeksSince(cachedAt) % 2 == 1)
             {
-                case "full": t.week = -1; break;
-                case "upper": t.week = 0; break;
-                case "lower": t.week = 1; break;
+                week.Type = week.ReversedWeek();
             }
-            return t;
         }
-        /// <summary>
-        /// Counts number of minutes before lesson starts
-        /// </summary>
-        /// <param name="ToL">Lesson's time-slot</param>
-        /// <returns></returns>
-        static public int GetMinsToLesson(TimeOfLesson ToL, Week week)
-        {
-            int res = 0;
-            int CurWeek = (int)week.week;
-            var CurTime = System.DateTime.Now;
-            int CurDay = (((int)CurTime.DayOfWeek) + 6) % 7;
-            int days = 0;
-
-            if (ToL.day < CurDay || (ToL.day == CurDay && ToL.starth < CurTime.Hour) || (ToL.day == CurDay && ToL.starth == CurTime.Hour && ToL.startm < CurTime.Minute))//lesson is on the next week
-            {
-                if (ToL.starth < CurTime.Hour || (ToL.starth == CurTime.Hour && ToL.startm < CurTime.Minute))//is it necessary to include today into full days before lesson count
-                    days += (ToL.day + 6 - CurDay);
-                else
-                    days += (ToL.day + 7 - CurDay);
-                if (ToL.week != -1 && ToL.week != (CurWeek + 1) % 2)//is lesson held only on other type of weeks(U/L)
-                    days += 7;
-            }
-            else//lesson is on this week
-            {
-                if (ToL.starth < CurTime.Hour || (ToL.starth == CurTime.Hour && ToL.startm < CurTime.Minute))//is it necessary to include today into full days before lesson count
-                    days += (ToL.day - CurDay - 1);
-                else
-                    days += (ToL.day - CurDay);
-                if (ToL.week != -1 && ToL.week != CurWeek)//is lesson held only on other type of weeks(U/L)
-                    days += 7;
-            }
-            res += days * 24 * 60;
-
-            if (ToL.starth < CurTime.Hour || (ToL.starth == CurTime.Hour && ToL.startm < CurTime.Minute))//Lesson is not today
-                res += (23 - CurTime.Hour + ToL.starth) * 60 + (60 - CurTime.Minute) + ToL.startm;
-            else //Lesson is held today
-                res += (ToL.starth - CurTime.Hour) * 60 + (ToL.startm - CurTime.Minute);
-
-            return res;
-        }
+        return week;
     }
 
-    public static class CurrentSubject
+    private static int WeeksSince(DateTime cachedAtUtc)
     {
-        public static int GetCurDayOfWeek() => (((int)System.DateTime.Now.DayOfWeek) + 6) % 7;
-        public static int GetNextDayOfWeek() => (((int)System.DateTime.Now.DayOfWeek) + 7) % 7;
-
-        /// <summary>
-        /// Get current week (cached)
-        /// </summary>
-        /// <returns></returns>
-        public static Week GetCurrentWeek()
-        {
-            return TimeOfLesson.curWeek;
-        }
-        /// <summary>
-        /// Request current week
-        /// </summary>
-        /// <returns></returns>
-        public static async Task<Week> RequestCurrentWeekAsync(SchRequests.FetchInfo? info = null)
-        {
-            string url = mmcs_schedule_app.App.host + "/APIv1/week/";
-            SchRequests.FetchInfo weekInfo = new();
-            Week week = await SchRequests.SchRequests.GetAsync<Week>(url, weekInfo);
-            if (weekInfo.StaleSince is { } cachedAt)
-            {
-                info?.Add(cachedAt);
-                if (WeeksSince(cachedAt) % 2 == 1)
-                {
-                    week.week = week.reversedWeek();
-                }
-            }
-            return week;
-        }
-
-        private static int WeeksSince(DateTime cachedAtUtc)
-        {
-            DateTime cachedAt = cachedAtUtc.ToLocalTime().Date;
-            DateTime now = DateTime.Now.Date;
-            DateTime cachedWeekStart = cachedAt.AddDays(-(((int)cachedAt.DayOfWeek + 6) % 7));
-            DateTime nowWeekStart = now.AddDays(-GetCurDayOfWeek());
-            return (int)((nowWeekStart - cachedWeekStart).TotalDays / 7);
-        }
+        DateTime cachedAt = cachedAtUtc.ToLocalTime().Date;
+        DateTime now = DateTime.Now.Date;
+        DateTime cachedWeekStart = cachedAt.AddDays(-(((int)cachedAt.DayOfWeek + 6) % 7));
+        DateTime nowWeekStart = now.AddDays(-GetCurDayOfWeek());
+        return (int)((nowWeekStart - cachedWeekStart).TotalDays / 7);
     }
-    public static class StudentMethods
+}
+public static class StudentMethods
+{
+    /// <summary>
+    /// Comparison (Lesson, List of Curriculum) by day of week and time
+    /// </summary>
+    /// <param name="first"></param>
+    /// <param name="second"></param>
+    /// <returns></returns>
+    private static int CompareByDayAndTime(
+        (Lesson, List<Curriculum>) first, (Lesson, List<Curriculum>) second)
     {
+        TimeOfLesson firstSlot = TimeOfLesson.Parse(first.Item1.Timeslot);
+        TimeOfLesson secondSlot = TimeOfLesson.Parse(second.Item1.Timeslot);
+        return firstSlot.Day * 24 + firstSlot.StartHour * 60 + firstSlot.StartMinute
+            - (secondSlot.Day * 24 + secondSlot.StartHour * 60 + secondSlot.StartMinute);
+    }
+    /// <summary>
+    /// Request week schedule for <paramref name="groupId"/>
+    /// </summary>
+    /// <param name="groupId"></param>
+    /// <param name="info">Receives the date of the offline cache if it was used</param>
+    /// <returns>Ordered by day of week and time week schedule</returns>
+    public static async Task<List<(Lesson, List<Curriculum>)>> RequestWeekScheduleAsync(
+        int groupId, SchRequests.FetchInfo? info = null)
+    {
+        string url = mmcs_schedule_app.App.Host + "/APIv1/schedule/group/" + groupId;
+        SchOfGroup schedule = await SchRequests.SchRequests.GetAsync<SchOfGroup>(url, info);
+        List<(Lesson, List<Curriculum>)> result = [];
+        foreach (Lesson lesson in schedule.Lessons)
+        {
+            result.Add((lesson, schedule.Curricula.FindAll(c => c.LessonId == lesson.Id)));
+        }
+        result.Sort(CompareByDayAndTime);
+        return result;
+    }
+}
 
+public static class TeacherMethods
+{
 
-        /// <summary>
-        /// Get next Lesson and it's curriculum (cached)
-        /// </summary>
-        /// <param name="groupID"></param>
-        /// <returns></returns>
-        public static (Lesson, List<Curriculum>) GetCurrentLesson(int groupID)
-        {
-            var schedule = GetWeekSchedule(groupID);
-            if (schedule.Count > 0)
-            {
-                var cur_week = GetCurrentWeek();
-                return GetWeekSchedule(groupID).OrderBy(l1 => TimeOfLesson.GetMinsToLesson(TimeOfLesson.Parse(l1.Item1.timeslot), cur_week)).First();
-            }
-            return (new Lesson(), new List<Curriculum>());
-        }
-
-        /// <summary>
-        /// Comparison (Lesson, List of Curriculum) by day of week and time
-        /// </summary>
-        /// <param name="llc1"></param>
-        /// <param name="llc2"></param>
-        /// <returns></returns>
-        private static int CmpLLCByDayAndTime((Lesson, List<Curriculum>) llc1, (Lesson, List<Curriculum>) llc2)
-        {
-            var tol1 = TimeOfLesson.Parse(llc1.Item1.timeslot);
-            var tol2 = TimeOfLesson.Parse(llc2.Item1.timeslot);
-            return (tol1.day * 24 + tol1.starth * 60 + tol1.startm) - (tol2.day * 24 + tol2.starth * 60 + tol2.startm);
-        }
-        /// <summary>
-        /// Request week schedule for <paramref name="groupID"/>
-        /// </summary>
-        /// <param name="groupID"></param>
-        /// <returns>Ordered by day of week and time week schedule</returns>
-        public static async Task<List<(Lesson, List<Curriculum>)>> RequestWeekScheduleAsync(int groupID, SchRequests.FetchInfo? info = null)
-        {
-            string url = mmcs_schedule_app.App.host + "/APIv1/schedule/group/" + groupID;
-            var schedule = await SchRequests.SchRequests.GetAsync<SchOfGroup>(url, info);
-            var res = new List<(Lesson, List<Curriculum>)>();
-            if (schedule.lessons.Count > 0)
-            {
-                foreach (var les in schedule.lessons)
-                    res.Add((les, schedule.curricula.FindAll(c => c.lessonid == les.id)));
-            }
-            res.Sort(CmpLLCByDayAndTime);
-            return res;
-        }
-
-        /// <summary>
-        /// Get week schedule for <paramref name="groupID"/> (cached)
-        /// </summary>
-        /// <param name="groupID"></param>
-        /// <returns>Ordered by day of week and time week schedule</returns>
-        public static List<(Lesson, List<Curriculum>)> GetWeekSchedule(int groupID)
-        {
-            /*
-            //if cached schedule is too old than request new
-            if (!ScheduleBot.Program.GroupShedule.ContainsKey(groupID) || DateTime.Now - ScheduleBot.Program.GroupShedule[groupID].Item2 > TimeSpan.FromHours(7*24))
-            {
-                try
-                { ScheduleBot.Program.GroupShedule[groupID] = (RequestWeekSchedule(groupID), DateTime.Now); }
-                catch (System.Net.WebException e)
-                {
-                }
-            }
-            return ScheduleBot.Program.GroupShedule[groupID].Item1;
-            */
-            return null;
-        }
-
-        /// <summary>
-        /// Ordered <paramref name="day"/> schedule
-        /// </summary>
-        /// <param name="groupID"></param>
-        /// <param name="day">Day of week, 0..6</param>
-        /// <returns></returns>
-        public static List<(Lesson, List<Curriculum>)> GetDaySchedule(int groupID, int day)
-        {
-            return GetWeekSchedule(groupID).FindAll(LLC => TimeOfLesson.Parse(LLC.Item1.timeslot).day == day);
-        }
-
-        public static List<(Lesson, List<Curriculum>)> GetTodaySchedule(int groupID)
-        {
-            var day = GetCurDayOfWeek();
-            var week = GetCurrentWeek().week;
-            return GetWeekSchedule(groupID).FindAll(LLC => { var tol = TimeOfLesson.Parse(LLC.Item1.timeslot); return tol.day == day && (tol.week == -1 || tol.week == (int)week); });
-        }
-        public static List<(Lesson, List<Curriculum>)> GetTomorrowSchedule(int groupID)
-        {
-            var day = GetNextDayOfWeek();
-            var week = day != 0 ? GetCurrentWeek().week : GetCurrentWeek().reversedWeek();
-            return GetWeekSchedule(groupID).FindAll(LLC => { var tol = TimeOfLesson.Parse(LLC.Item1.timeslot); return tol.day == day && (tol.week == -1 || tol.week == (int)week); });
-        }
+    /// <summary>
+    /// Get teachers list (not cached)
+    /// </summary>
+    /// <returns></returns>
+    public static async Task<Teacher[]> GetTeachersListAsync(SchRequests.FetchInfo? info = null)
+    {
+        const string url = mmcs_schedule_app.App.Host + "/APIv1/teacher/list";
+        return await SchRequests.SchRequests.GetAsync<Teacher[]>(url, info);
     }
 
-    public static class TeacherMethods
+    /// <summary>
+    /// Comparison(Lesson, List of Curriculum, List of TechGroup)
+    /// </summary>
+    /// <param name="first"></param>
+    /// <param name="second"></param>
+    /// <returns></returns>
+    private static int CompareByDayAndTime(
+        (Lesson, List<Curriculum>, List<TechGroup>) first,
+        (Lesson, List<Curriculum>, List<TechGroup>) second)
     {
-
-        /// <summary>
-        /// Get teachers list (not cached)
-        /// </summary>
-        /// <returns></returns>
-        public static async Task<Teacher[]> GetTeachersListAsync(SchRequests.FetchInfo? info = null)
-        {
-            string url = mmcs_schedule_app.App.host + "/APIv1/teacher/list";
-            return await SchRequests.SchRequests.GetAsync<Teacher[]>(url, info);
-        }
-
-        /// <summary> 
-        /// Get next Lesson for the Teacher (cached)
-        /// </summary> 
-        /// <param name="teacherID"></param> 
-        /// <returns></returns> 
-        public static (Lesson, List<Curriculum>, List<TechGroup>) GetCurrentLesson(int teacherID)
-        {
-            var schedule = GetWeekSchedule(teacherID);
-            if (schedule.Count > 0)
-            {
-                var cur_week = GetCurrentWeek();
-                return GetWeekSchedule(teacherID).OrderBy(l1 => TimeOfLesson.GetMinsToLesson(TimeOfLesson.Parse(l1.Item1.timeslot), cur_week)).First();
-            }
-            return (new Lesson(), new List<Curriculum>(), new List<TechGroup>());
-        }
-
-        /// <summary>
-        /// Comparison(Lesson, List of Curriculum, List of TechGroup)
-        /// </summary>
-        /// <param name="llc1"></param>
-        /// <param name="llc2"></param>
-        /// <returns></returns>
-        private static int CmpLLCGByDayAndTime((Lesson, List<Curriculum>, List<TechGroup>) llc1, (Lesson, List<Curriculum>, List<TechGroup>) llc2)
-        {
-            var tol1 = TimeOfLesson.Parse(llc1.Item1.timeslot);
-            var tol2 = TimeOfLesson.Parse(llc2.Item1.timeslot);
-            return (tol1.day * 24 + tol1.starth * 60 + tol1.startm) - (tol2.day * 24 + tol2.starth * 60 + tol2.startm);
-        }
-
-        /// <summary>
-        /// Request week schedule for <paramref name="teacherID"/>
-        /// </summary>
-        /// <param name="teacherID"></param>
-        /// <returns>Ordered by day of week and time week schedule</returns>
-		public static async Task<List<(Lesson, List<Curriculum>, List<TechGroup>)>> RequestWeekScheduleAsync(int teacherID, SchRequests.FetchInfo? info = null)
-        {
-            string url = mmcs_schedule_app.App.host + "/APIv1/schedule/teacher/" + teacherID;
-            var schedule = await SchRequests.SchRequests.GetAsync<SchOfTeacher>(url, info);
-            var res = new List<(Lesson, List<Curriculum>, List<TechGroup>)>();
-            if (schedule.lessons.Count > 0)
-            {
-                foreach (var les in schedule.lessons)
-                    res.Add((les, schedule.curricula.FindAll(c => c.lessonid == les.id), schedule.groups.FindAll(g => g.uberid == les.uberid)));
-            }
-            res.Sort(CmpLLCGByDayAndTime);
-            return res;
-        }
-
-        /// <summary>
-		/// Get week schedule for <paramref name="teacherID"/> (cached)
-		/// </summary>
-		/// <param name="teacherID"></param>
-		/// <returns>Ordered by day of week and time week schedule</returns>
-        public static List<(Lesson, List<Curriculum>, List<TechGroup>)> GetWeekSchedule(int teacherID)
-        {
-            /*
-            //if cached schedule is too old than request new
-            if (!ScheduleBot.Program.TeacherSchedule.ContainsKey(teacherID) || DateTime.Now - ScheduleBot.Program.TeacherSchedule[teacherID].Item2 > TimeSpan.FromHours(7 * 24))
-            {
-                try
-                { ScheduleBot.Program.TeacherSchedule[teacherID] = (RequestWeekSchedule(teacherID), DateTime.Now); }
-                catch (System.Net.WebException e)
-                {
-                    logger.Warn($"Не удалось обновить расписание для преподавателя teacherID {teacherID}.", e);
-                }
-            }
-            return ScheduleBot.Program.TeacherSchedule[teacherID].Item1;
-            */
-            return null;
-        }
-
-        /// <summary>
-        /// Ordered <paramref name="day"/> schedule for teacher
-        /// </summary>
-        /// <param name="teacherID"></param>
-        /// <param name="day">Day of week, 0..6</param>
-        /// <returns></returns>
-        public static List<(Lesson, List<Curriculum>, List<TechGroup>)> GetDaySchedule(int teacherID, int day)
-        {
-            return GetWeekSchedule(teacherID).FindAll(LLCG => TimeOfLesson.Parse(LLCG.Item1.timeslot).day == day);
-        }
-
-        public static List<(Lesson, List<Curriculum>, List<TechGroup>)> GetTodaySchedule(int teacherID)
-        {
-            var day = GetCurDayOfWeek();
-            int week = (int)GetCurrentWeek().week;
-            return GetWeekSchedule(teacherID).FindAll(LLCG => { var tol = TimeOfLesson.Parse(LLCG.Item1.timeslot); return tol.day == day && (tol.week == -1 || tol.week == week); });
-        }
-
-        public static List<(Lesson, List<Curriculum>, List<TechGroup>)> GetTomorrowSchedule(int teacherID)
-        {
-            var day = GetNextDayOfWeek();
-            int week = (int)(day != 0 ? GetCurrentWeek().week : GetCurrentWeek().reversedWeek());
-            return GetWeekSchedule(teacherID).FindAll(LLCG => { var tol = TimeOfLesson.Parse(LLCG.Item1.timeslot); return tol.day == day && (tol.week == -1 || tol.week == week); });
-        }
+        TimeOfLesson firstSlot = TimeOfLesson.Parse(first.Item1.Timeslot);
+        TimeOfLesson secondSlot = TimeOfLesson.Parse(second.Item1.Timeslot);
+        return firstSlot.Day * 24 + firstSlot.StartHour * 60 + firstSlot.StartMinute
+            - (secondSlot.Day * 24 + secondSlot.StartHour * 60 + secondSlot.StartMinute);
     }
 
-    public static class GradeMethods
+    /// <summary>
+    /// Request week schedule for <paramref name="teacherId"/>
+    /// </summary>
+    /// <param name="teacherId"></param>
+    /// <param name="info">Receives the date of the offline cache if it was used</param>
+    /// <returns>Ordered by day of week and time week schedule</returns>
+    public static async Task<List<(Lesson, List<Curriculum>, List<TechGroup>)>> RequestWeekScheduleAsync(
+        int teacherId, SchRequests.FetchInfo? info = null)
     {
-        public static async Task<Grade[]> GetGradesListAsync(SchRequests.FetchInfo? info = null)
+        string url = mmcs_schedule_app.App.Host + "/APIv1/schedule/teacher/" + teacherId;
+        SchOfTeacher schedule = await SchRequests.SchRequests.GetAsync<SchOfTeacher>(url, info);
+        List<(Lesson, List<Curriculum>, List<TechGroup>)> result = [];
+        foreach (Lesson lesson in schedule.Lessons)
         {
-            string url = mmcs_schedule_app.App.host + "/APIv1/grade/list";
-            return await SchRequests.SchRequests.GetAsync<Grade[]>(url, info);
+            result.Add((
+                lesson,
+                schedule.Curricula.FindAll(c => c.LessonId == lesson.Id),
+                schedule.Groups.FindAll(g => g.UberId == lesson.UberId)));
         }
+        result.Sort(CompareByDayAndTime);
+        return result;
+    }
+}
 
-        public static async Task<Group[]> GetGroupsListAsync(int GradeId, SchRequests.FetchInfo? info = null)
-        {
-            string url = mmcs_schedule_app.App.host + "/APIv1/group/forGrade/" + GradeId;
-            return await SchRequests.SchRequests.GetAsync<Group[]>(url, info);
-        }
+public static class GradeMethods
+{
+    public static async Task<Grade[]> GetGradesListAsync(SchRequests.FetchInfo? info = null)
+    {
+        const string url = mmcs_schedule_app.App.Host + "/APIv1/grade/list";
+        return await SchRequests.SchRequests.GetAsync<Grade[]>(url, info);
     }
 
+    public static async Task<Group[]> GetGroupsListAsync(int gradeId, SchRequests.FetchInfo? info = null)
+    {
+        string url = mmcs_schedule_app.App.Host + "/APIv1/group/forGrade/" + gradeId;
+        return await SchRequests.SchRequests.GetAsync<Group[]>(url, info);
+    }
 }

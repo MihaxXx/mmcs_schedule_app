@@ -2,304 +2,348 @@
 using System.ComponentModel;
 using System.Text;
 
-namespace mmcs_schedule_app
+namespace mmcs_schedule_app;
+
+// Learn more about making custom code visible in the Xamarin.Forms previewer
+// by visiting https://aka.ms/xamarinforms-previewer
+[DesignTimeVisible(false)]
+public partial class MainPage
 {
-    // Learn more about making custom code visible in the Xamarin.Forms previewer
-    // by visiting https://aka.ms/xamarinforms-previewer
-    [DesignTimeVisible(false)]
-    public partial class MainPage : ContentPage
+    private API.Grade[] grades = [];
+    private API.Teacher[] teachers = [];
+    private API.User user = new();
+
+    private bool isDataLoaded;
+    private bool isLoading;
+    private int activeRequests;
+    private int? pendingGroupIndex;
+    private bool loadFailed;
+    private bool groupsFailed;
+    private SchRequests.FetchInfo dataInfo = new();
+    private SchRequests.FetchInfo groupsInfo = new();
+
+    // Static cached data with lazy loading
+    private static API.Grade[]? _cachedGrades;
+    private static API.Teacher[]? _cachedTeachers;
+    private static readonly Dictionary<int, API.Group[]> _cachedGroups = [];
+
+    private static async Task<T> GetMemoizedAsync<T>(
+        T? memo, Func<SchRequests.FetchInfo, Task<T>> request, Action<T> save,
+        SchRequests.FetchInfo? info) where T : class
     {
-        private API.Grade[] Grades = [];
-        private API.Teacher[] Teachers = [];
-        API.User user = new API.User();
-
-        private bool isDataLoaded;
-        private bool isLoading;
-        private int activeRequests;
-        private int? pendingGroupIndex;
-        private bool loadFailed;
-        private bool groupsFailed;
-        private SchRequests.FetchInfo dataInfo = new();
-        private SchRequests.FetchInfo groupsInfo = new();
-
-        // Static cached data with lazy loading
-        private static API.Grade[]? _cachedGrades;
-        private static API.Teacher[]? _cachedTeachers;
-        private static Dictionary<int, API.Group[]> _cachedGroups = [];
-
-        private static async Task<T> GetMemoizedAsync<T>(T? memo, Func<SchRequests.FetchInfo, Task<T>> request, Action<T> save, SchRequests.FetchInfo? info) where T : class
+        if (memo is not null)
         {
-            if (memo is not null)
+            return memo;
+        }
+
+        SchRequests.FetchInfo requestInfo = new();
+        T result = await request(requestInfo);
+        info?.Merge(requestInfo);
+        if (requestInfo.StaleSince is null)
+        {
+            save(result);
+        }
+        return result;
+    }
+
+    public static Task<API.Grade[]> GetGradesAsync(SchRequests.FetchInfo? info = null)
+    {
+        return GetMemoizedAsync(
+            _cachedGrades,
+            API.GradeMethods.GetGradesListAsync,
+            loaded => _cachedGrades = loaded,
+            info);
+    }
+
+    public static Task<API.Teacher[]> GetTeachersAsync(SchRequests.FetchInfo? info = null)
+    {
+        return GetMemoizedAsync(
+            _cachedTeachers,
+            API.TeacherMethods.GetTeachersListAsync,
+            loaded => _cachedTeachers = loaded,
+            info);
+    }
+
+    public static Task<API.Group[]> GetGroupsAsync(int gradeId, SchRequests.FetchInfo? info = null)
+    {
+        return GetMemoizedAsync(
+            _cachedGroups.GetValueOrDefault(gradeId),
+            requestInfo => API.GradeMethods.GetGroupsListAsync(gradeId, requestInfo),
+            loaded => _cachedGroups[gradeId] = loaded,
+            info);
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        _ = this.RunSafelyAsync(InitializeAsync);
+    }
+
+    private void Banner_RetryClicked(object? sender, EventArgs e)
+    {
+        _ = this.RunSafelyAsync(InitializeAsync);
+    }
+
+    private async Task InitializeAsync()
+    {
+        if (!await LoadDataAsync())
+        {
+            return;
+        }
+
+        if (App.IsLoggedIn)
+        {
+            user = App.User;
+            bool isTeacher = user.Info == API.User.UserInfo.Teacher;
+            RolePicker.SelectedIndex = isTeacher ? 1 : 0;
+            if (!isTeacher)
             {
-                return memo;
+                pendingGroupIndex = user.GroupIndex;
             }
+            GradeOrTeacherPicker.SelectedIndex = user.GradeOrTeacherIndex;
+            App.IsLoggedIn = false;
+            File.Delete(App.FileName);
+            App.User = new API.User();
+        }
+    }
 
-            SchRequests.FetchInfo requestInfo = new();
-            T result = await request(requestInfo);
-            info?.Merge(requestInfo);
-            if (requestInfo.StaleSince is null)
-            {
-                save(result);
-            }
-            return result;
+    private async Task<bool> LoadDataAsync()
+    {
+        if (isDataLoaded)
+        {
+            return true;
+        }
+        if (isLoading)
+        {
+            return false;
         }
 
-        public static Task<API.Grade[]> GetGradesAsync(SchRequests.FetchInfo? info = null)
+        isLoading = true;
+        loadFailed = false;
+        UpdateBanner();
+        SetLoading(true);
+        try
         {
-            return GetMemoizedAsync(_cachedGrades, API.GradeMethods.GetGradesListAsync, grades => _cachedGrades = grades, info);
+            SchRequests.FetchInfo info = new();
+            grades = await GetGradesAsync(info);
+            teachers = await GetTeachersAsync(info);
+            dataInfo = info;
+            isDataLoaded = info.StaleSince is null;
+            RolePicker.IsEnabled = true;
+            return true;
         }
-
-        public static Task<API.Teacher[]> GetTeachersAsync(SchRequests.FetchInfo? info = null)
+        catch (SchRequests.ScheduleUnavailableException)
         {
-            return GetMemoizedAsync(_cachedTeachers, API.TeacherMethods.GetTeachersListAsync, teachers => _cachedTeachers = teachers, info);
+            loadFailed = true;
+            return false;
         }
-
-        public static Task<API.Group[]> GetGroupsAsync(int gradeId, SchRequests.FetchInfo? info = null)
+        finally
         {
-            return GetMemoizedAsync(_cachedGroups.GetValueOrDefault(gradeId), requestInfo => API.GradeMethods.GetGroupsListAsync(gradeId, requestInfo), groups => _cachedGroups[gradeId] = groups, info);
-        }
-
-        protected override async void OnAppearing()
-        {
-            base.OnAppearing();
-            await InitializeAsync();
-        }
-
-        private async void Banner_RetryClicked(object? sender, EventArgs e)
-        {
-            await InitializeAsync();
-        }
-
-        private async Task InitializeAsync()
-        {
-            if (!await LoadDataAsync())
-            {
-                return;
-            }
-
-            if (App._isLoggedIn)
-            {
-                user = App.user;
-                bool isTeacher = user.Info == API.User.UserInfo.teacher;
-                Role.SelectedIndex = isTeacher ? 1 : 0;
-                if (!isTeacher)
-                {
-                    pendingGroupIndex = user.list2selID;
-                }
-                List_NmOrGr.SelectedIndex = user.list1selID;
-                App._isLoggedIn = false;
-                File.Delete(App._fileName);
-                App.user = new API.User();
-            }
-        }
-
-        private async Task<bool> LoadDataAsync()
-        {
-            if (isDataLoaded)
-            {
-                return true;
-            }
-            if (isLoading)
-            {
-                return false;
-            }
-
-            isLoading = true;
-            loadFailed = false;
+            SetLoading(false);
+            isLoading = false;
             UpdateBanner();
-            SetLoading(true);
-            try
-            {
-                SchRequests.FetchInfo info = new();
-                Grades = await GetGradesAsync(info);
-                Teachers = await GetTeachersAsync(info);
-                dataInfo = info;
-                isDataLoaded = info.StaleSince is null;
-                Role.IsEnabled = true;
-                return true;
-            }
-            catch (SchRequests.ScheduleUnavailableException)
-            {
-                loadFailed = true;
-                return false;
-            }
-            finally
-            {
-                SetLoading(false);
-                isLoading = false;
-                UpdateBanner();
-            }
+        }
+    }
+
+    private void SetLoading(bool isStarting)
+    {
+        activeRequests += isStarting ? 1 : -1;
+        LoadingIndicator.IsRunning = LoadingIndicator.IsVisible = activeRequests > 0;
+    }
+
+    private void UpdateBanner()
+    {
+        if (loadFailed)
+        {
+            Banner.ShowError(true);
+            return;
+        }
+        if (groupsFailed)
+        {
+            Banner.ShowError(false);
+            return;
         }
 
-        private void SetLoading(bool isLoading)
-        {
-            activeRequests += isLoading ? 1 : -1;
-            activityIndicator.IsRunning = activityIndicator.IsVisible = activeRequests > 0;
-        }
+        SchRequests.FetchInfo combined = new();
+        combined.Merge(dataInfo);
+        combined.Merge(groupsInfo);
+        Banner.ShowStale(combined, dataInfo.StaleSince is not null);
+    }
 
-        private void UpdateBanner()
+    private async Task LoadGroupsAsync(int gradeIndex)
+    {
+        GroupPicker.IsEnabled = false;
+        GroupPicker.Items.Clear();
+        GroupPicker.SelectedIndex = -1;
+        OkButton.IsEnabled = false;
+        groupsFailed = false;
+        groupsInfo = new SchRequests.FetchInfo();
+        UpdateBanner();
+        SetLoading(true);
+        try
         {
-            if (loadFailed)
+            API.Grade grade = grades[gradeIndex];
+            SchRequests.FetchInfo info = new();
+            grade.Groups = [.. await GetGroupsAsync(grade.Id, info)];
+            groupsInfo = info;
+            if (GradeOrTeacherPicker.SelectedIndex != gradeIndex)
             {
-                Banner.ShowError(true);
                 return;
             }
-            if (groupsFailed)
+
+            foreach (API.Group group in grade.Groups)
             {
-                Banner.ShowError(false);
-                return;
+                GroupPicker.Items.Add(group.Name + " группа " + group.Number);
             }
-
-            SchRequests.FetchInfo combined = new();
-            combined.Merge(dataInfo);
-            combined.Merge(groupsInfo);
-            Banner.ShowStale(combined, dataInfo.StaleSince is not null);
+            GroupPicker.IsEnabled = true;
+            if (pendingGroupIndex is { } pendingIndex && pendingIndex < grade.Groups.Count)
+            {
+                GroupPicker.SelectedIndex = pendingIndex;
+            }
+            pendingGroupIndex = null;
         }
-
-        private async Task LoadGroupsAsync(int gradeIndex)
+        catch (SchRequests.ScheduleUnavailableException)
         {
-            List_Groups.IsEnabled = false;
-            List_Groups.Items.Clear();
-            List_Groups.SelectedIndex = -1;
-            Ok_btn.IsEnabled = false;
-            groupsFailed = false;
-            groupsInfo = new();
+            pendingGroupIndex = null;
+            GradeOrTeacherPicker.SelectedIndex = -1;
+            groupsFailed = true;
+        }
+        finally
+        {
+            SetLoading(false);
             UpdateBanner();
-            SetLoading(true);
-            try
-            {
-                API.Grade grade = Grades[gradeIndex];
-                SchRequests.FetchInfo info = new();
-                grade.Groups = [.. await GetGroupsAsync(grade.id, info)];
-                groupsInfo = info;
-                if (List_NmOrGr.SelectedIndex != gradeIndex)
-                {
-                    return;
-                }
+        }
+    }
 
-                foreach (API.Group g in grade.Groups)
-                {
-                    List_Groups.Items.Add(g.name + " группа " + g.num);
-                }
-                List_Groups.IsEnabled = true;
-                if (pendingGroupIndex is { } pendingIndex && pendingIndex < grade.Groups.Count)
-                {
-                    List_Groups.SelectedIndex = pendingIndex;
-                }
-                pendingGroupIndex = null;
-            }
-            catch (SchRequests.ScheduleUnavailableException)
+
+    public MainPage()
+    {
+        InitializeComponent();
+    }
+    private void RolePicker_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (sender is not Picker picker || picker.SelectedIndex == 0)
+        {
+            //Set to fix user is a student, later reaasigned to correct grade
+            user.Info = API.User.UserInfo.Bachelor;
+            GradeOrTeacherPicker.Items.Clear();
+            GradeOrTeacherPicker.Title = "Курс";
+            foreach (API.Grade grade in grades)
             {
-                pendingGroupIndex = null;
-                List_NmOrGr.SelectedIndex = -1;
-                groupsFailed = true;
-            }
-            finally
-            {
-                SetLoading(false);
-                UpdateBanner();
+                GradeOrTeacherPicker.Items.Add(StuDegree(grade.Degree) + " " + grade.Number + " курс");
             }
         }
-
-
-        public MainPage()
+        else if (picker.SelectedIndex == 1)
         {
-            InitializeComponent();
-        }
-        private void Role_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (sender is not Picker picker || picker.SelectedIndex == 0)
+            user.Info = API.User.UserInfo.Teacher;
+            GradeOrTeacherPicker.Items.Clear();
+            GradeOrTeacherPicker.Title = "Имя";
+            foreach (API.Teacher teacher in teachers)
             {
-                //Set to fix user is a student, later reaasigned to correct grade
-                user.Info = API.User.UserInfo.bachelor;
-                List_NmOrGr.Items.Clear();
-                List_NmOrGr.Title = "Курс";
-                foreach (var gr in Grades)
-                    List_NmOrGr.Items.Add(StuDegree(gr.degree) + " " + gr.num + " курс");
-            }
-            else if (picker.SelectedIndex == 1)
-            {
-                user.Info = API.User.UserInfo.teacher;
-                List_NmOrGr.Items.Clear();
-                List_NmOrGr.Title = "Имя";
-                foreach (var t in Teachers)
-                    List_NmOrGr.Items.Add(t.name);
-            }
-            List_NmOrGr.SelectedIndex = -1;
-            List_NmOrGr.IsEnabled = true;
-            List_Groups.SelectedIndex = -1;
-            List_Groups.IsEnabled = false;
-            Ok_btn.IsEnabled = false;
-        }
-        private async void List_NmOrGr_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (sender is not Picker picker || picker.SelectedIndex == -1)
-                return;
-
-            user.list1selID = picker.SelectedIndex;
-            if (user.Info == API.User.UserInfo.teacher)
-            {
-                List_Groups.IsEnabled = false;
-                user.teacherId = Teachers.First(t => t.name == picker.Items[picker.SelectedIndex]).id;
-                Ok_btn.IsEnabled = true;
-            }
-            else
-            {
-                switch (Grades[List_NmOrGr.SelectedIndex].degree)
-                {
-                    case "bachelor": user.Info = API.User.UserInfo.bachelor; break;
-                    case "master": user.Info = API.User.UserInfo.master; break;
-                    case "specialist": user.Info = API.User.UserInfo.bachelor; break;
-                    case "postgraduate": user.Info = API.User.UserInfo.graduate; break;
-                }
-                user.course = Grades[List_NmOrGr.SelectedIndex].num;
-                await LoadGroupsAsync(List_NmOrGr.SelectedIndex);
+                GradeOrTeacherPicker.Items.Add(teacher.Name);
             }
         }
-        private void List_Groups_SelectedIndexChanged(object sender, EventArgs e)
+        GradeOrTeacherPicker.SelectedIndex = -1;
+        GradeOrTeacherPicker.IsEnabled = true;
+        GroupPicker.SelectedIndex = -1;
+        GroupPicker.IsEnabled = false;
+        OkButton.IsEnabled = false;
+    }
+    private void GradeOrTeacherPicker_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (sender is not Picker picker || picker.SelectedIndex == -1)
         {
-            if (sender is not Picker picker || picker.SelectedIndex == -1)
-                return;
-
-            user.list2selID = List_Groups.SelectedIndex;
-            user.group = Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].num;
-            user.groupid = Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].id;
-            Ok_btn.IsEnabled = true;
+            return;
         }
 
-        async private void Ok_btnClicked(object sender, EventArgs e)
+        user.GradeOrTeacherIndex = picker.SelectedIndex;
+        if (user.Info == API.User.UserInfo.Teacher)
         {
-            user.header = user.Info == API.User.UserInfo.teacher ? List_NmOrGr.Items[List_NmOrGr.SelectedIndex] :
-                string.Join(" ", StuDegreeShort(user.Info.ToString()), Grades[List_NmOrGr.SelectedIndex].Groups[List_Groups.SelectedIndex].name, user.course + "." + user.group);
-            App.user = user;
-            File.WriteAllText(App._fileName, JsonConvert.SerializeObject(App.user, Formatting.Indented), Encoding.UTF8);
-            App._isLoggedIn = true;
-            int id = user.Info == API.User.UserInfo.teacher ? user.teacherId : user.groupid;
-            Navigation.InsertPageBefore(new ScheduleView(user.Info, id, user.header), this);
-            await Navigation.PopAsync();
+            GroupPicker.IsEnabled = false;
+            user.TeacherId = teachers.First(t => t.Name == picker.Items[picker.SelectedIndex]).Id;
+            OkButton.IsEnabled = true;
         }
-
-        public static string StuDegreeShort(string degree)
+        else
         {
-            return degree switch
+            user.Info = grades[GradeOrTeacherPicker.SelectedIndex].Degree switch
             {
-                "bachelor" => "Бак.",
-                "master" => "Маг.",
-                "specialist" => "Спец.",
-                "graduate" => "Асп.",
-                _ => "н/д",
+                "bachelor" => API.User.UserInfo.Bachelor,
+                "master" => API.User.UserInfo.Master,
+                "specialist" => API.User.UserInfo.Bachelor,
+                "postgraduate" => API.User.UserInfo.Graduate,
+                _ => user.Info
             };
+            user.Course = grades[GradeOrTeacherPicker.SelectedIndex].Number;
+            int gradeIndex = GradeOrTeacherPicker.SelectedIndex;
+            _ = this.RunSafelyAsync(() => LoadGroupsAsync(gradeIndex));
         }
-        public static string StuDegree(string degree)
+    }
+    private API.Group SelectedGroup =>
+        grades[GradeOrTeacherPicker.SelectedIndex].Groups[GroupPicker.SelectedIndex];
+
+    private void GroupPicker_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (sender is not Picker picker || picker.SelectedIndex == -1)
         {
-            return degree switch
-            {
-                "bachelor" => "Бакалавриат",
-                "master" => "Магистратура",
-                "specialist" => "Специалитет",
-                "postgraduate" => "Аспирантура",
-                _ => "н/д",
-            };
+            return;
         }
+
+        user.GroupIndex = GroupPicker.SelectedIndex;
+        user.GroupNumber = SelectedGroup.Number;
+        user.GroupId = SelectedGroup.Id;
+        OkButton.IsEnabled = true;
+    }
+
+    private void OkButton_Clicked(object sender, EventArgs e)
+    {
+        _ = this.RunSafelyAsync(SaveUserAndOpenScheduleAsync);
+    }
+
+    private async Task SaveUserAndOpenScheduleAsync()
+    {
+        user.Header = user.Info == API.User.UserInfo.Teacher
+            ? GradeOrTeacherPicker.Items[GradeOrTeacherPicker.SelectedIndex]
+            : string.Join(" ", StuDegreeShort(user.Info.ToString().ToLowerInvariant()),
+                SelectedGroup.Name, user.Course + "." + user.GroupNumber);
+        App.User = user;
+        try
+        {
+            string json = JsonConvert.SerializeObject(App.User, Formatting.Indented);
+            await File.WriteAllTextAsync(App.FileName, json, Encoding.UTF8);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await DisplayAlertAsync(
+                "Ошибка",
+                "Не удалось сохранить выбор, при следующем запуске его придется выбрать заново",
+                "OK");
+        }
+        App.IsLoggedIn = true;
+        int ownerId = user.Info == API.User.UserInfo.Teacher ? user.TeacherId : user.GroupId;
+        Navigation.InsertPageBefore(new ScheduleView(user.Info, ownerId, user.Header), this);
+        await Navigation.PopAsync();
+    }
+
+    public static string StuDegreeShort(string degree)
+    {
+        return degree switch
+        {
+            "bachelor" => "Бак.",
+            "master" => "Маг.",
+            "specialist" => "Спец.",
+            "graduate" => "Асп.",
+            _ => "н/д"
+        };
+    }
+    public static string StuDegree(string degree)
+    {
+        return degree switch
+        {
+            "bachelor" => "Бакалавриат",
+            "master" => "Магистратура",
+            "specialist" => "Специалитет",
+            "postgraduate" => "Аспирантура",
+            _ => "н/д"
+        };
     }
 }

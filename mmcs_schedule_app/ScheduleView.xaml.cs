@@ -1,260 +1,287 @@
 ﻿using API;
 using System.Collections.ObjectModel;
 
-namespace mmcs_schedule_app
-{
-    public class LessonItem
-    {
-        public string time { get; set; }
-        public string name { get; set; }
-        public string notes { get; set; }
-        public string room { get; set; }
-        public string who { get; set; }
-        public TimeOfLesson timeslot { get; set; }
-        public (Lesson, List<Curriculum>, List<TechGroup>) TData { get; private set; }
-        public (Lesson, List<Curriculum>) SData { get; private set; }
+namespace mmcs_schedule_app;
 
-        public LessonItem(string tm, string nm, string n, string r, string w, TimeOfLesson ts, (Lesson, List<Curriculum>, List<TechGroup>) TD)
+public class LessonItem
+{
+    public string Time { get; set; }
+    public string Name { get; set; }
+    public string Notes { get; set; }
+    public string Room { get; set; }
+    public string Who { get; set; }
+    public TimeOfLesson Timeslot { get; set; }
+    public (Lesson, List<Curriculum>, List<TechGroup>) TeacherData { get; }
+    public (Lesson, List<Curriculum>) StudentData { get; }
+
+    public LessonItem(string time, string name, string notes, string room, string who,
+        TimeOfLesson timeslot, (Lesson, List<Curriculum>, List<TechGroup>) teacherData)
+    {
+        Time = time;
+        Name = name;
+        Notes = notes;
+        Room = room;
+        Who = who;
+        Timeslot = timeslot;
+        TeacherData = teacherData;
+    }
+    public LessonItem(string time, string name, string notes, string room, string who,
+        TimeOfLesson timeslot, (Lesson, List<Curriculum>) studentData)
+    {
+        Time = time;
+        Name = name;
+        Notes = notes;
+        Room = room;
+        Who = who;
+        Timeslot = timeslot;
+        StudentData = studentData;
+    }
+}
+public partial class ScheduleView
+{
+    private Week currentWeek = new();
+
+    private readonly Week selectedWeek = new() { Type = WeekType.Current };
+
+    private List<LessonItem> allLessons = [];
+
+    public ObservableCollection<IGrouping<string, LessonItem>> GroupedLessons { get; } = [];
+
+    private readonly List<string> dayNames;
+
+    private readonly User.UserInfo userInfo;
+    private readonly int userId; // teacherId or groupid
+
+    private bool isScheduleLoaded;
+    private bool isLoading;
+
+    // Static cache for day names
+    private static List<string>? _cachedDayNames;
+
+    public static string GetDayName(int dayIndex)
+    {
+        _cachedDayNames ??= [.. new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames];
+        return _cachedDayNames[(dayIndex + 1) % 7];
+    }
+
+    public ScheduleView(User.UserInfo info, int id, string header, bool isFromModal = false)
+    {
+        InitializeComponent();
+        userInfo = info;
+        userId = id;
+        Title = header;
+
+        if (isFromModal)
         {
-            time = tm;
-            name = nm;
-            notes = n;
-            room = r;
-            who = w;
-            timeslot = ts;
-            TData = TD;
+            ToolbarItems.RemoveAt(1); // Remove Exit button
         }
-        public LessonItem(string tm, string nm, string n, string r, string w, TimeOfLesson ts, (Lesson, List<Curriculum>) SD)
+
+        //Gets russian day names, possible to use CurrentInfo, but app has no localization,
+        //so no reason for that
+        dayNames = [.. new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames];
+
+        //Must be at the end!!!
+        BindingContext = this;
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        _ = this.RunSafelyAsync(LoadScheduleAsync);
+    }
+
+    private void Banner_RetryClicked(object? sender, EventArgs e)
+    {
+        _ = this.RunSafelyAsync(LoadScheduleAsync);
+    }
+
+    private async Task LoadScheduleAsync()
+    {
+        if (isScheduleLoaded || isLoading)
         {
-            time = tm;
-            name = nm;
-            notes = n;
-            room = r;
-            who = w;
-            timeslot = ts;
-            SData = SD;
+            return;
+        }
+
+        isLoading = true;
+        LoadingIndicator.IsRunning = LoadingIndicator.IsVisible = true;
+        try
+        {
+            SchRequests.FetchInfo info = new();
+            currentWeek = await WeekMethods.RequestCurrentWeekAsync(info);
+            allLessons = userInfo == User.UserInfo.Teacher
+                ? await RequestTeacherLessonsAsync(info)
+                : await RequestStudentLessonsAsync(info);
+            UpdateGroupedLessons();
+            isScheduleLoaded = info.StaleSince is null;
+            Banner.ShowStale(info, true);
+        }
+        catch (SchRequests.ScheduleUnavailableException)
+        {
+            Banner.ShowError(true);
+        }
+        finally
+        {
+            LoadingIndicator.IsRunning = LoadingIndicator.IsVisible = false;
+            isLoading = false;
         }
     }
-    public partial class ScheduleView : ContentPage
+
+    private async Task<List<LessonItem>> RequestTeacherLessonsAsync(SchRequests.FetchInfo info)
     {
-        Week currentWeek = new();
-
-        Week selectedWeek = new Week() { week = (WeekType)2 };
-
-        List<LessonItem> Shed = new List<LessonItem>();
-
-        public ObservableCollection<IGrouping<string, LessonItem>> GroupedShed { get; private set; } = [];
-
-        List<string> DayNames;
-
-        private readonly User.UserInfo userInfo;
-        private readonly int userId; // teacherId or groupid
-        private readonly string userHeader;
-
-        private bool isScheduleLoaded;
-        private bool isLoading;
-
-        // Static cache for day names
-        private static List<string> _cachedDayNames;
-
-        public static string GetDayName(int dayIndex)
+        List<LessonItem> lessons = [];
+        foreach ((Lesson, List<Curriculum>, List<TechGroup>) lessonData
+            in await TeacherMethods.RequestWeekScheduleAsync(userId, info))
         {
-            if (_cachedDayNames == null)
-            {
-                _cachedDayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames.ToList();
-            }
-            return _cachedDayNames[(dayIndex + 1) % 7];
+            TimeOfLesson slot = TimeOfLesson.Parse(lessonData.Item1.Timeslot);
+            lessons.Add(new LessonItem(
+                slot.ToString(),
+                lessonData.Item2[0].SubjectName,
+                (string.IsNullOrEmpty(lessonData.Item1.Info) ? "" : lessonData.Item1.Info + "\n")
+                    + slot.WeekName,
+                lessonData.Item2.First().RoomName,
+                string.Join("\n", lessonData.Item3.Select(
+                    g => $"• {StuDegreeShort(g.Degree)} {g.GradeNumber}.{g.GroupNumber}")),
+                slot,
+                lessonData));
         }
+        return lessons;
+    }
 
-        public ScheduleView(User.UserInfo info, int id, string header, bool isFromModal = false)
+    private async Task<List<LessonItem>> RequestStudentLessonsAsync(SchRequests.FetchInfo info)
+    {
+        List<LessonItem> lessons = [];
+        //Go thought list of lessons (present timeslots for group)
+        foreach ((Lesson, List<Curriculum>) lessonData
+            in await StudentMethods.RequestWeekScheduleAsync(userId, info))
         {
-            InitializeComponent();
-            userInfo = info;
-            userId = id;
-            userHeader = header;
-            Title = userHeader;
-
-            if (isFromModal)
+            TimeOfLesson slot = TimeOfLesson.Parse(lessonData.Item1.Timeslot);
+            //Go thought list of Curriculums (present subj for timeslot)
+            foreach (Curriculum curriculum
+                in lessonData.Item2.ToLookup(c => c.SubjectId).Select(bySubject => bySubject.First()))
             {
-                ToolbarItems.RemoveAt(1); // Remove Exit button
-            }
+                List<Curriculum> subjectCurricula =
+                    [.. lessonData.Item2.Where(c => c.SubjectId == curriculum.SubjectId)];
 
-            //Gets russian day names, possible to use CurrentInfo, but app has no localization, so no reason for that
-            DayNames = new System.Globalization.CultureInfo("ru-RU").DateTimeFormat.DayNames.ToList();
-
-            //Must be at the end!!!
-            BindingContext = this;
-        }
-
-        protected override async void OnAppearing()
-        {
-            base.OnAppearing();
-            await LoadScheduleAsync();
-        }
-
-        private async void Banner_RetryClicked(object? sender, EventArgs e)
-        {
-            await LoadScheduleAsync();
-        }
-
-        private async Task LoadScheduleAsync()
-        {
-            if (isScheduleLoaded || isLoading)
-            {
-                return;
-            }
-
-            isLoading = true;
-            activityIndicator.IsRunning = activityIndicator.IsVisible = true;
-            try
-            {
-                SchRequests.FetchInfo info = new();
-                currentWeek = await CurrentSubject.RequestCurrentWeekAsync(info);
-                Shed = userInfo == User.UserInfo.teacher ? await RequestTeacherLessonsAsync(info) : await RequestStudentLessonsAsync(info);
-                UpdateGroupedShed();
-                isScheduleLoaded = info.StaleSince is null;
-                Banner.ShowStale(info, true);
-            }
-            catch (SchRequests.ScheduleUnavailableException)
-            {
-                Banner.ShowError(true);
-            }
-            finally
-            {
-                activityIndicator.IsRunning = activityIndicator.IsVisible = false;
-                isLoading = false;
-            }
-        }
-
-        private async Task<List<LessonItem>> RequestTeacherLessonsAsync(SchRequests.FetchInfo info)
-        {
-            List<LessonItem> lessons = [];
-            foreach (var LLC in await TeacherMethods.RequestWeekScheduleAsync(userId, info))
-            {
-                var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
                 lessons.Add(new LessonItem(
-                    tol.ToString(),
-                    LLC.Item2[0].subjectname,
-                    (string.IsNullOrEmpty(LLC.Item1.info) ? "" : LLC.Item1.info + "\n") + (tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя"),
-                    LLC.Item2.First().roomname,
-                    string.Join("\n", LLC.Item3.Select(g => $"• {StuDegreeShort(g.degree)} {g.gradenum}.{g.groupnum}")),
-                    tol,
-                    LLC));
-            }
-            return lessons;
-        }
-
-        private async Task<List<LessonItem>> RequestStudentLessonsAsync(SchRequests.FetchInfo info)
-        {
-            List<LessonItem> lessons = [];
-            //Go thought list of lessons (present timeslots for group)
-            foreach (var LLC in await StudentMethods.RequestWeekScheduleAsync(userId, info))
-            {
-                var tol = TimeOfLesson.Parse(LLC.Item1.timeslot);
-                //Go thought list of Curriculums (present subj for timeslot)
-                foreach (var LC in LLC.Item2.ToLookup(lc => lc.subjectid).Select(coll => coll.First()))
-                {
-                    var FilteredCurs = LLC.Item2.Where(c => c.subjectid == LC.subjectid).ToList();
-
-                    lessons.Add(new LessonItem(
-                        tol.ToString(),
-                        LC.subjectname,
-                        (string.IsNullOrEmpty(LLC.Item1.info) ? "" : LLC.Item1.info + "\n") + (tol.week == -1 ? "" : tol.week == 0 ? "верхняя неделя" : "нижняя неделя"),
-                        FilteredCurs.Count > 2 ? "..." : string.Join("\n", FilteredCurs.Select(curs => curs.roomname)),
-                        string.Join("\n", FilteredCurs.Select(c => $"• {c.teachername}\n  {c.roomname}")),
-                        tol,
-                        (LLC.Item1, FilteredCurs)));
-                }
-            }
-            return lessons;
-        }
-
-        private void UpdateGroupedShed()
-        {
-            GroupedShed.Clear();
-
-            foreach (var lesson in Shed
-                .Where(l => IsOnSelectedWeek(l.timeslot.week))
-                .OrderBy(l => l.timeslot.day).ThenBy(l => l.timeslot.starth * 60 + l.timeslot.startm).ThenBy(l => l.timeslot.week)
-                .GroupBy(l => DayNames[(l.timeslot.day + 1) % 7]))
-            {
-                GroupedShed.Add(lesson);
+                    slot.ToString(),
+                    curriculum.SubjectName,
+                    (string.IsNullOrEmpty(lessonData.Item1.Info) ? "" : lessonData.Item1.Info + "\n")
+                        + slot.WeekName,
+                    subjectCurricula.Count > 2
+                        ? "..."
+                        : string.Join("\n", subjectCurricula.Select(c => c.RoomName)),
+                    string.Join("\n", subjectCurricula.Select(c => $"• {c.TeacherName}\n  {c.RoomName}")),
+                    slot,
+                    (lessonData.Item1, subjectCurricula)));
             }
         }
+        return lessons;
+    }
 
-        private bool IsOnSelectedWeek(int leesonWeek)
+    private void UpdateGroupedLessons()
+    {
+        GroupedLessons.Clear();
+
+        foreach (IGrouping<string, LessonItem> dayLessons in allLessons
+            .Where(l => IsOnSelectedWeek(l.Timeslot.Week))
+            .OrderBy(l => l.Timeslot.Day)
+            .ThenBy(l => l.Timeslot.StartHour * 60 + l.Timeslot.StartMinute)
+            .ThenBy(l => l.Timeslot.Week)
+            .GroupBy(l => dayNames[(l.Timeslot.Day + 1) % 7]))
         {
-            return selectedWeek.week == WeekType.Full
-                || leesonWeek == -1
-                || (selectedWeek.week == WeekType.Current && leesonWeek == (int)currentWeek.week)
-                || (selectedWeek.week != WeekType.Current && leesonWeek == (int)selectedWeek.week);
+            GroupedLessons.Add(dayLessons);
         }
+    }
 
-        public static string StuDegreeShort(string degree)
+    private bool IsOnSelectedWeek(int lessonWeek)
+    {
+        return selectedWeek.Type == WeekType.Full
+            || lessonWeek == -1
+            || (selectedWeek.Type == WeekType.Current && lessonWeek == (int)currentWeek.Type)
+            || (selectedWeek.Type != WeekType.Current && lessonWeek == (int)selectedWeek.Type);
+    }
+
+    public static string StuDegreeShort(string degree)
+    {
+        return degree switch
         {
-            switch (degree)
-            {
-                case "bachelor": return "бак.";
-                case "master": return "маг.";
-                case "specialist": return "спец.";
-                case "postgraduate": return "асп.";
-                default: return "н/д";
-            }
-        }
+            "bachelor" => "бак.",
+            "master" => "маг.",
+            "specialist" => "спец.",
+            "postgraduate" => "асп.",
+            _ => "н/д"
+        };
+    }
 
-        async private void OnExitClicked(object sender, EventArgs e)
+    private void OnExitClicked(object sender, EventArgs e)
+    {
+        _ = this.RunSafelyAsync(async () =>
         {
             Navigation.InsertPageBefore(new MainPage(), this);
             await Navigation.PopAsync();
-        }
+        });
+    }
 
-        private async void OnChangeWeekClicked(object sender, EventArgs e)
+    private void OnChangeWeekClicked(object sender, EventArgs e)
+    {
+        _ = this.RunSafelyAsync(ChangeWeekAsync);
+    }
+
+    private async Task ChangeWeekAsync()
+    {
+        string[] filterOptions =
+            ["Текущая неделя", "Только верхняя", "Только нижняя", "Полное расписание"];
+        string action = await DisplayActionSheetAsync("Выберите тип недели", "Отмена", null,
+            [.. filterOptions.Select(
+                o => FilterTextToWeek(o) == selectedWeek.Type ? $"◉ {o}" : $"○ {o}")]);
+
+        if (action != null && action != "Отмена")
         {
-            string[] filterOptions = ["Текущая неделя", "Только верхняя", "Только нижняя", "Полное расписание"];
-            string action = await DisplayActionSheet("Выберите тип недели", "Отмена", null,
-                [.. filterOptions.Select(o => FilterTextToWeek(o) == selectedWeek.week ? $"◉ {o}" : $"○ {o}")]);
+            selectedWeek.Type = FilterTextToWeek(action.TrimStart('○', '◉', ' '));
 
-            if (action != null && action != "Отмена")
-            {
-                selectedWeek.week = FilterTextToWeek(action.TrimStart('○', '◉', ' '));
-
-                UpdateGroupedShed();
-            }
+            UpdateGroupedLessons();
         }
+    }
 
-        private static WeekType FilterTextToWeek(string action)
+    private static WeekType FilterTextToWeek(string action)
+    {
+        return action switch
         {
-            return action switch
-            {
-                "Текущая неделя" => WeekType.Current,
-                "Только верхняя" => WeekType.Upper,
-                "Только нижняя" => WeekType.Lower,
-                "Полное расписание" => WeekType.Full,
-                _ => WeekType.Current,
-            };
-        }
+            "Текущая неделя" => WeekType.Current,
+            "Только верхняя" => WeekType.Upper,
+            "Только нижняя" => WeekType.Lower,
+            "Полное расписание" => WeekType.Full,
+            _ => WeekType.Current
+        };
+    }
 
-        async void OnListItemTapped(object sender, ItemTappedEventArgs e)
+    private void OnListItemTapped(object sender, ItemTappedEventArgs e)
+    {
+        ((ListView)sender).SelectedItem = null;
+        LessonItem item = (LessonItem)e.Item;
+        _ = this.RunSafelyAsync(() => ShowLessonDetailAsync(item));
+    }
+
+    private async Task ShowLessonDetailAsync(LessonItem item)
+    {
+
+        LessonDetailPage detailPage;
+
+        if (userInfo == User.UserInfo.Teacher && item.TeacherData.Item1 != null)
         {
-            ((ListView)sender).SelectedItem = null;
-            var item = (LessonItem)e.Item;
-
-            LessonDetailPage detailPage;
-
-            if (userInfo == User.UserInfo.teacher && item.TData.Item1 != null)
-            {
-                detailPage = new LessonDetailPage(item.name, item.timeslot, item.TData.Item1.info, item.TData.Item3, item.room, Navigation);
-            }
-            else if (userInfo != User.UserInfo.teacher && item.SData.Item1 != null)
-            {
-                detailPage = new LessonDetailPage(item.name, item.timeslot, item.SData.Item1.info, item.SData.Item2, Navigation);
-            }
-            else
-            {
-                return;
-            }
-
-            await Navigation.PushModalAsync(detailPage);
+            detailPage = new LessonDetailPage(item.Name, item.Timeslot, item.TeacherData.Item1.Info,
+                item.TeacherData.Item3, item.Room, Navigation);
         }
+        else if (userInfo != User.UserInfo.Teacher && item.StudentData.Item1 != null)
+        {
+            detailPage = new LessonDetailPage(item.Name, item.Timeslot, item.StudentData.Item1.Info,
+                item.StudentData.Item2, Navigation);
+        }
+        else
+        {
+            return;
+        }
+
+        await Navigation.PushModalAsync(detailPage);
     }
 }

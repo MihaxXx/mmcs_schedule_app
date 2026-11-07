@@ -8,7 +8,7 @@
              x:Class="mmcs_schedule_app.MainPage"
              Title="Расписание">
     <StackLayout Spacing="10" Padding="10,10">
-        <Picker Title="Студент / Преподаватель" x:Name="Role" IsEnabled="False" VerticalOptions="Start" SelectedIndexChanged="Role_SelectedIndexChanged" >
+        <Picker Title="Студент / Преподаватель" x:Name="RolePicker" IsEnabled="False" VerticalOptions="Start" SelectedIndexChanged="RolePicker_SelectedIndexChanged" >
             <Picker.ItemsSource>
                 <x:Array Type="{x:Type x:String}">
                     <x:String>Студент</x:String>
@@ -16,18 +16,18 @@
                 </x:Array>
             </Picker.ItemsSource>
         </Picker>
-        <Picker Title="Курс / ФИО" IsEnabled="False" x:Name="List_NmOrGr" VerticalOptions="Start" SelectedIndexChanged="List_NmOrGr_SelectedIndexChanged">
+        <Picker Title="Курс / ФИО" IsEnabled="False" x:Name="GradeOrTeacherPicker" VerticalOptions="Start" SelectedIndexChanged="GradeOrTeacherPicker_SelectedIndexChanged">
             <Picker.ItemsSource>
             </Picker.ItemsSource>
         </Picker>
-        <Picker Title="Группа" x:Name="List_Groups" VerticalOptions="Start"
-                SelectedIndexChanged="List_Groups_SelectedIndexChanged"
+        <Picker Title="Группа" x:Name="GroupPicker" VerticalOptions="Start"
+                SelectedIndexChanged="GroupPicker_SelectedIndexChanged"
                 IsEnabled="False">
             <Picker.ItemsSource>
             </Picker.ItemsSource>
         </Picker>
-        <ActivityIndicator x:Name="activityIndicator" IsRunning="False" IsVisible="False"/>
+        <ActivityIndicator x:Name="LoadingIndicator" IsRunning="False" IsVisible="False"/>
         <local:StatusBanner x:Name="Banner" RetryClicked="Banner_RetryClicked"/>
-        <Button Text="ОК" x:Name="Ok_btn" IsEnabled="False" Clicked="Ok_btnClicked"/>
+        <Button Text="ОК" x:Name="OkButton" IsEnabled="False" Clicked="OkButton_Clicked"/>
     </StackLayout>
 </ContentPage>

@@ -2,48 +2,51 @@
 using Newtonsoft.Json;
 using System.Text;
 
-namespace mmcs_schedule_app
+namespace mmcs_schedule_app;
+
+public partial class App
 {
-    public partial class App : Application
+    public const string Host = "https://schedule.sfedu.ru";
+
+    public static User User { get; set; } = new();
+
+    public static bool IsLoggedIn { get; set; }
+
+    public static readonly string FileName = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "settings.json");
+
+    public App()
     {
-        public const string host = "https://schedule.sfedu.ru";
+        InitializeComponent();
 
-        public static User user;
-
-        public static bool _isLoggedIn;
-
-        readonly public static string _fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "settings.json");
-
-        public App()
+        if (File.Exists(FileName)
+            && JsonConvert.DeserializeObject<User>(File.ReadAllText(FileName, Encoding.UTF8))
+                is { } loggedInUser)
         {
-            InitializeComponent();
+            IsLoggedIn = true;
+            User = loggedInUser;
+        }
+    }
 
-            if (File.Exists(_fileName) && JsonConvert.DeserializeObject<User>(File.ReadAllText(_fileName, Encoding.UTF8)) is { } loggedInUser)
-            {
-                _isLoggedIn = true;
-                user = loggedInUser;
-            }
+    internal static Page GetStartPage()
+    {
+        NavigationPage page;
+
+        if (IsLoggedIn)
+        {
+            int ownerId = User.Info == User.UserInfo.Teacher ? User.TeacherId : User.GroupId;
+            page = new NavigationPage(new ScheduleView(User.Info, ownerId, User.Header));
+        }
+        else
+        {
+            page = new NavigationPage(new MainPage());
         }
 
-        internal static Page GetStartPage()
-        {
-            NavigationPage page;
+        return page;
+    }
 
-            if (_isLoggedIn)
-            {
-                page = new NavigationPage(new ScheduleView(user.Info, user.Info == User.UserInfo.teacher ? user.teacherId : user.groupid, user.header));
-            }
-            else
-            {
-                page = new NavigationPage(new MainPage());
-            }
-
-            return page;
-        }
-
-        protected override Window CreateWindow(IActivationState? activationState)
-        {
-            return new Window(GetStartPage());
-        }
+    protected override Window CreateWindow(IActivationState? activationState)
+    {
+        return new Window(GetStartPage());
     }
 }
