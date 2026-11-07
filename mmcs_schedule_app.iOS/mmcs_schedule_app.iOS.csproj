@@ -2,12 +2,17 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net10.0-ios</TargetFrameworks>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">12.2</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
 		<OutputType>Exe</OutputType>
 		<RootNamespace>mmcs_schedule_app</RootNamespace>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseMaui>true</UseMaui>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<!-- Bypass until .NET for iOS supports Xcode 27.2; remove once the iOS workload is updated -->
+		<ValidateXcodeVersion>false</ValidateXcodeVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)'=='net9.0-ios'">

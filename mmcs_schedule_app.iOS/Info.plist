@@ -47,7 +47,7 @@
 	<key>CFBundleName</key>
 	<string>mmcs_schedule_app</string>
 	<key>MinimumOSVersion</key>
-	<string>12.2</string>
+	<string>15.0</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSExceptionDomains</key>
