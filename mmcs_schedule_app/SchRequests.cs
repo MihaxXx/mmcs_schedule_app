@@ -1,6 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace SchRequests;
 
@@ -53,6 +54,10 @@ public class SchRequests
     /// </summary>
     private static bool _useCleartext;
 
+    private static readonly JsonSerializerSettings _jsonSettings = new()
+    {
+        ContractResolver = new DefaultContractResolver { NamingStrategy = new LowerCaseNamingStrategy() }
+    };
     /// <summary>
     /// Requests <paramref name="url"/> and deserializes the JSON response. A valid response is cached
     /// on disk; if the request fails, the last cached response is returned and its date is added to
@@ -120,7 +125,7 @@ public class SchRequests
     {
         try
         {
-            return JsonConvert.DeserializeObject<T>(str)
+            return JsonConvert.DeserializeObject<T>(str, _jsonSettings)
                 ?? throw new ScheduleUnavailableException("Empty response");
         }
         catch (JsonException e)
@@ -200,5 +205,16 @@ public class SchRequests
         {
         }
         return null;
+    }
+
+    /// <summary>
+    /// The schedule API writes every JSON property name in lowercase (uberid, teachername).
+    /// </summary>
+    private sealed class LowerCaseNamingStrategy : NamingStrategy
+    {
+        protected override string ResolvePropertyName(string name)
+        {
+            return name.ToLowerInvariant();
+        }
     }
 }

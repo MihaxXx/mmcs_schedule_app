@@ -60,11 +60,6 @@ dotnet_naming_rule.types_pascal_case.symbols = types
 dotnet_naming_rule.types_pascal_case.style = pascal_case
 dotnet_naming_rule.types_pascal_case.severity = warning
 
-# An exception escaping an async void method crashes the app. UI handlers run their async work through
-# PageExtensions.RunSafelyAsync instead; a new async void handler that skips it shows up here.
-resharper_async_void_method_highlighting = suggestion
-resharper_async_void_lambda_highlighting = suggestion
-resharper_async_void_event_handler_method_highlighting = suggestion
 
 # The "another GetEnumerator" variant suggests a rewrite that changes which enumerator is used
 resharper_foreach_can_be_converted_to_query_using_another_get_enumerator_highlighting = none

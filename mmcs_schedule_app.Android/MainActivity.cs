@@ -1,6 +1,5 @@
 using Android.App;
 using Android.Content.PM;
-using Android.Content.Res;
 using Android.OS;
 using AndroidX.Core.View;
 
@@ -17,23 +16,9 @@ public class MainActivity : MauiAppCompatActivity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
-        UseLightStatusBarIcons();
-    }
-
-    public override void OnConfigurationChanged(Configuration newConfig)
-    {
-        base.OnConfigurationChanged(newConfig);
-        UseLightStatusBarIcons();
-    }
-
-    private void UseLightStatusBarIcons()
-    {
-        if (Window is null)
+        if (Window is { } window)
         {
-            return;
+            WindowCompat.GetInsetsController(window, window.DecorView)?.AppearanceLightStatusBars = false;
         }
-
-        WindowInsetsControllerCompat? controller = WindowCompat.GetInsetsController(Window, Window.DecorView);
-        controller?.AppearanceLightStatusBars = false;
     }
 }
