@@ -17,6 +17,7 @@
                HorizontalOptions="End"
                VerticalOptions="Center"
                Margin="0,0,10,0"
+               TranslationY="{OnPlatform Android=-4, Default=0}"
                IsVisible="False"/>
     </Grid>
 </ContentView>
