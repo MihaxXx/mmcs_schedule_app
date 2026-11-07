@@ -19,6 +19,12 @@ public class User
     [JsonProperty("groupid")]
     public int GroupId;
 
+    /// <summary>
+    /// Id of student`s grade, 0 in settings saved before it was stored
+    /// </summary>
+    [JsonProperty("gradeId")]
+    public int GradeId;
+
     [JsonProperty("course")]
     public int Course;
 

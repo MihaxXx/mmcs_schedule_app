@@ -56,8 +56,13 @@ public partial class LessonDetailPage
             ));
         }
 
-        ItemTappedCommand = new Command<LessonItemInfo>(
-            item => _ = this.RunSafelyAsync(() => OnTeacherTapped((int)item.ItemData)));
+        ItemTappedCommand = new Command<LessonItemInfo>(item =>
+        {
+            if (!string.IsNullOrWhiteSpace(item.MainText))
+            {
+                _ = this.RunSafelyAsync(() => OnTeacherTapped((int)item.ItemData));
+            }
+        });
 
         BindingContext = this;
     }

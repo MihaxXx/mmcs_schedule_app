@@ -16,7 +16,7 @@ public partial class MainPage
     private bool isDataLoaded;
     private bool isLoading;
     private int activeRequests;
-    private int? pendingGroupIndex;
+    private int? pendingGroupId;
     private bool loadFailed;
     private bool groupsFailed;
     private SchRequests.FetchInfo dataInfo = new();
@@ -96,15 +96,40 @@ public partial class MainPage
             user = App.User;
             bool isTeacher = user.Info == API.User.UserInfo.Teacher;
             RolePicker.SelectedIndex = isTeacher ? 1 : 0;
-            if (!isTeacher)
+            if (isTeacher)
             {
-                pendingGroupIndex = user.GroupIndex;
+                GradeOrTeacherPicker.SelectedIndex = Array.FindIndex(teachers, t => t.Id == user.TeacherId);
             }
-            GradeOrTeacherPicker.SelectedIndex = user.GradeOrTeacherIndex;
+            else
+            {
+                int gradeIndex = FindSavedGradeIndex();
+                if (gradeIndex >= 0)
+                {
+                    pendingGroupId = user.GroupId;
+                }
+                GradeOrTeacherPicker.SelectedIndex = gradeIndex;
+            }
             App.IsLoggedIn = false;
             File.Delete(App.FileName);
             App.User = new API.User();
         }
+    }
+
+    /// <summary>
+    /// Index of the saved grade in <see cref="grades"/>, or -1 if it no longer exists. Settings saved before
+    /// the grade id was stored are matched by their picker index, accepted only if the course still agrees.
+    /// </summary>
+    private int FindSavedGradeIndex()
+    {
+        if (user.GradeId != 0)
+        {
+            return Array.FindIndex(grades, g => g.Id == user.GradeId);
+        }
+
+        int legacyIndex = user.GradeOrTeacherIndex;
+        bool isSameGrade = legacyIndex >= 0 && legacyIndex < grades.Length
+            && grades[legacyIndex].Number == user.Course;
+        return isSameGrade ? legacyIndex : -1;
     }
 
     private async Task<bool> LoadDataAsync()
@@ -126,7 +151,7 @@ public partial class MainPage
         {
             SchRequests.FetchInfo info = new();
             grades = await GetGradesAsync(info);
-            teachers = await GetTeachersAsync(info);
+            teachers = [.. (await GetTeachersAsync(info)).Where(t => !string.IsNullOrWhiteSpace(t.Name))];
             dataInfo = info;
             isDataLoaded = info.StaleSince is null;
             RolePicker.IsEnabled = true;
@@ -196,15 +221,15 @@ public partial class MainPage
                 GroupPicker.Items.Add(group.Name + " группа " + group.Number);
             }
             GroupPicker.IsEnabled = true;
-            if (pendingGroupIndex is { } pendingIndex && pendingIndex < grade.Groups.Count)
+            if (pendingGroupId is { } groupId)
             {
-                GroupPicker.SelectedIndex = pendingIndex;
+                GroupPicker.SelectedIndex = grade.Groups.FindIndex(g => g.Id == groupId);
             }
-            pendingGroupIndex = null;
+            pendingGroupId = null;
         }
         catch (SchRequests.ScheduleUnavailableException)
         {
-            pendingGroupIndex = null;
+            pendingGroupId = null;
             GradeOrTeacherPicker.SelectedIndex = -1;
             groupsFailed = true;
         }
@@ -273,6 +298,7 @@ public partial class MainPage
                 "postgraduate" => API.User.UserInfo.Graduate,
                 _ => user.Info
             };
+            user.GradeId = grades[GradeOrTeacherPicker.SelectedIndex].Id;
             user.Course = grades[GradeOrTeacherPicker.SelectedIndex].Number;
             int gradeIndex = GradeOrTeacherPicker.SelectedIndex;
             _ = this.RunSafelyAsync(() => LoadGroupsAsync(gradeIndex));
