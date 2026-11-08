@@ -144,19 +144,58 @@ public partial class ScheduleView
                 : "";
             lessons.Add(new LessonItem(
                 slot.ToString(),
-                lessonData.Item2[0].SubjectName,
-                (teachers.Length == 0 ? "" : teachers + "\n")
-                    + (string.IsNullOrEmpty(lessonData.Item1.Info) ? "" : lessonData.Item1.Info + "\n")
-                    + slot.WeekName,
-                forRoom
-                    ? string.Join("\n", lessonData.Item3.Select(MainPage.GroupShortName))
-                    : lessonData.Item2.First().RoomName,
+                string.Join("\n", DistinctSorted(lessonData.Item2.Select(c => c.SubjectName))),
+                JoinLines(teachers, lessonData.Item1.Info, slot.WeekName),
+                forRoom ? GroupsColumn(lessonData.Item3) : RoomsColumn(lessonData.Item2),
                 string.Join("\n", lessonData.Item3.Select(
                     g => $"• {StuDegreeShort(g.Degree)} {g.GradeNumber}.{g.GroupNumber}")),
                 slot,
                 lessonData));
         }
         return lessons;
+    }
+
+    /// <summary>
+    /// Groups for the narrow right column of a room schedule, sorted alphabetically: up to two groups in
+    /// full ("Бак-2 ФИИТ-3"), else up to two programs ("Бак-2 ФИИТ"), else, if all groups are of one
+    /// course, the course and the number of groups ("Бак-1 (5)"), else "...".
+    /// </summary>
+    private static string GroupsColumn(List<TechGroup> groups)
+    {
+        List<string> names = DistinctSorted(groups.Select(MainPage.GroupShortName));
+        if (names.Count <= 2)
+        {
+            return string.Join("\n", names);
+        }
+
+        List<string> programs = DistinctSorted(groups.Select(MainPage.GroupProgramName));
+        if (programs.Count <= 2)
+        {
+            return string.Join("\n", programs);
+        }
+
+        List<string> courses = DistinctSorted(groups.Select(MainPage.GroupCourseName));
+        return courses.Count == 1 ? $"{courses[0]} ({names.Count})" : "...";
+    }
+
+    /// <summary>
+    /// Rooms for the narrow right column of a teacher or student schedule: the distinct rooms sorted
+    /// alphabetically, or "..." if there are more than two of them.
+    /// </summary>
+    private static string RoomsColumn(IEnumerable<Curriculum> curricula)
+    {
+        List<string> rooms = DistinctSorted(curricula.Select(c => c.RoomName).Where(name => name != ""));
+        return rooms.Count > 2 ? "..." : string.Join("\n", rooms);
+    }
+
+    private static string JoinLines(params string[] lines)
+    {
+        return string.Join("\n", lines.Where(line => !string.IsNullOrEmpty(line)));
+    }
+
+    private static List<string> DistinctSorted(IEnumerable<string> values)
+    {
+        return [.. values.Distinct().Order(StringComparer.OrdinalIgnoreCase)];
     }
 
     private async Task<List<LessonItem>> RequestStudentLessonsAsync(SchRequests.FetchInfo info)
@@ -177,11 +216,8 @@ public partial class ScheduleView
                 lessons.Add(new LessonItem(
                     slot.ToString(),
                     curriculum.SubjectName,
-                    (string.IsNullOrEmpty(lessonData.Item1.Info) ? "" : lessonData.Item1.Info + "\n")
-                        + slot.WeekName,
-                    subjectCurricula.Count > 2
-                        ? "..."
-                        : string.Join("\n", subjectCurricula.Select(c => c.RoomName)),
+                    JoinLines(lessonData.Item1.Info, slot.WeekName),
+                    RoomsColumn(subjectCurricula),
                     string.Join("\n", subjectCurricula.Select(c => $"• {c.TeacherName}\n  {c.RoomName}")),
                     slot,
                     (lessonData.Item1, subjectCurricula)));

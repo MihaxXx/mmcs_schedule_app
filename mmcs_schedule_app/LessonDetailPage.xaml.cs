@@ -66,7 +66,9 @@ public partial class LessonDetailPage
 
         ListLabel = "Преподаватели:";
 
-        foreach (Curriculum curriculum in curricula)
+        foreach (Curriculum curriculum in curricula
+            .OrderBy(c => c.TeacherName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(c => c.RoomName, StringComparer.OrdinalIgnoreCase))
         {
             Items.Add(new LessonItemInfo(
                 curriculum.TeacherName,
@@ -91,7 +93,8 @@ public partial class LessonDetailPage
         if (forRoom)
         {
             foreach (Curriculum curriculum in curricula
-                .Where(c => !string.IsNullOrWhiteSpace(c.TeacherName)).DistinctBy(c => c.TeacherId))
+                .Where(c => !string.IsNullOrWhiteSpace(c.TeacherName)).DistinctBy(c => c.TeacherId)
+                .OrderBy(c => c.TeacherName, StringComparer.OrdinalIgnoreCase))
             {
                 Links.Add(new LessonItemInfo(curriculum.TeacherName, "", OpenTeacher(curriculum)));
             }
@@ -99,13 +102,15 @@ public partial class LessonDetailPage
         else
         {
             foreach (Curriculum curriculum in curricula
-                .Where(c => !string.IsNullOrWhiteSpace(c.RoomName)).DistinctBy(c => c.RoomId))
+                .Where(c => !string.IsNullOrWhiteSpace(c.RoomName)).DistinctBy(c => c.RoomId)
+                .OrderBy(c => c.RoomName, StringComparer.OrdinalIgnoreCase))
             {
                 Links.Add(new LessonItemInfo("Аудитория: " + curriculum.RoomName, "", OpenRoom(curriculum)));
             }
         }
 
-        foreach (TechGroup techGroup in groups)
+        foreach (TechGroup techGroup in groups
+            .OrderBy(MainPage.GroupFullName, StringComparer.OrdinalIgnoreCase))
         {
             Items.Add(new LessonItemInfo(
                 MainPage.GroupFullName(techGroup),
