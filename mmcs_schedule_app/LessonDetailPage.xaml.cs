@@ -107,10 +107,8 @@ public partial class LessonDetailPage
 
         foreach (TechGroup techGroup in groups)
         {
-            string groupDisplay = $"{MainPage.StuDegreeShort(techGroup.Degree)} {techGroup.Name} " +
-                $"{techGroup.GradeNumber}.{techGroup.GroupNumber}";
             Items.Add(new LessonItemInfo(
-                groupDisplay,
+                MainPage.GroupFullName(techGroup),
                 "", // No room info per item
                 () => OnGroupTapped(techGroup)
             ));
@@ -193,10 +191,7 @@ public partial class LessonDetailPage
             _ => User.UserInfo.Bachelor
         };
 
-        string header = $"{MainPage.StuDegreeShort(techGroup.Degree)} {techGroup.Name} " +
-            $"{techGroup.GradeNumber}.{techGroup.GroupNumber}";
-
-        ScheduleView scheduleView = new(userInfo, group.Id, header, true);
+        ScheduleView scheduleView = new(userInfo, group.Id, MainPage.GroupFullName(techGroup), true);
         await parentNavigation.PushAsync(scheduleView);
     }
 

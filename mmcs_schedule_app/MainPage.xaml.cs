@@ -395,10 +395,29 @@ public partial class MainPage
             "bachelor" => "Бак.",
             "master" => "Маг.",
             "specialist" => "Спец.",
-            "graduate" => "Асп.",
+            "graduate" or "postgraduate" => "Асп.",
             _ => "н/д"
         };
     }
+
+    /// <summary>
+    /// Compact group name for lists, e.g. "Бак-1 ФИИТ-1". The group number restarts in every program,
+    /// so it is only unique together with the program name.
+    /// </summary>
+    public static string GroupShortName(API.TechGroup group)
+    {
+        string degree = StuDegreeShort(group.Degree).TrimEnd('.');
+        return $"{degree}-{group.GradeNumber} {group.Name}-{group.GroupNumber}";
+    }
+
+    /// <summary>
+    /// Group name for titles and popups, e.g. "Бак. 1к ФИИТ 1гр"
+    /// </summary>
+    public static string GroupFullName(API.TechGroup group)
+    {
+        return $"{StuDegreeShort(group.Degree)} {group.GradeNumber}к {group.Name} {group.GroupNumber}гр";
+    }
+
     public static string StuDegree(string degree)
     {
         return degree switch

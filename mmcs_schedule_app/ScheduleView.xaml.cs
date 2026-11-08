@@ -149,8 +149,7 @@ public partial class ScheduleView
                     + (string.IsNullOrEmpty(lessonData.Item1.Info) ? "" : lessonData.Item1.Info + "\n")
                     + slot.WeekName,
                 forRoom
-                    ? string.Join("\n", lessonData.Item3.Select(
-                        g => $"{MainPage.StuDegreeShort(g.Degree)} {g.GradeNumber}.{g.GroupNumber}"))
+                    ? string.Join("\n", lessonData.Item3.Select(MainPage.GroupShortName))
                     : lessonData.Item2.First().RoomName,
                 string.Join("\n", lessonData.Item3.Select(
                     g => $"• {StuDegreeShort(g.Degree)} {g.GradeNumber}.{g.GroupNumber}")),
