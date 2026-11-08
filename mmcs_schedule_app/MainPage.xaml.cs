@@ -524,11 +524,11 @@ public partial class MainPage
     }
 
     /// <summary>
-    /// Group name for titles and popups, e.g. "Бак. 1к ФИИТ 1гр"
+    /// Group name for popups, e.g. "Бак. 1к. ФИИТ 1гр.", with the full program name
     /// </summary>
     public static string GroupFullName(API.TechGroup group)
     {
-        return $"{StuDegreeShort(group.Degree)} {group.GradeNumber}к {group.Name} {group.GroupNumber}гр";
+        return $"{StuDegreeShort(group.Degree)} {group.GradeNumber}к. {group.Name} {group.GroupNumber}гр.";
     }
 
     public static string StuDegree(string degree)

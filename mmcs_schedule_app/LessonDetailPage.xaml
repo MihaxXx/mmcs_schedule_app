@@ -76,12 +76,14 @@
                                         SelectionMode="None">
                             <CollectionView.ItemTemplate>
                                 <DataTemplate x:DataType="local:LessonItemInfo">
-                                    <HorizontalStackLayout Spacing="10"
-                                                           Padding="5">
+                                    <Grid ColumnDefinitions="Auto,*"
+                                          ColumnSpacing="10"
+                                          Padding="5">
                                         <Label Text="•"
                                                FontSize="16"
                                                VerticalOptions="Start" />
-                                        <VerticalStackLayout Spacing="7">
+                                        <VerticalStackLayout Grid.Column="1"
+                                                             Spacing="7">
                                             <Label Text="{Binding MainText}"
                                                    FontSize="16">
                                                 <Label.GestureRecognizers>
@@ -99,7 +101,7 @@
                                                 </Label.GestureRecognizers>
                                             </Label>
                                         </VerticalStackLayout>
-                                    </HorizontalStackLayout>
+                                    </Grid>
                                 </DataTemplate>
                             </CollectionView.ItemTemplate>
                         </CollectionView>
