@@ -1,7 +1,5 @@
 using Android.App;
 using Android.Content.PM;
-using Android.OS;
-using AndroidX.Core.View;
 
 namespace mmcs_schedule_app.Droid;
 
@@ -13,12 +11,4 @@ namespace mmcs_schedule_app.Droid;
         ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
 public class MainActivity : MauiAppCompatActivity
 {
-    protected override void OnCreate(Bundle? savedInstanceState)
-    {
-        base.OnCreate(savedInstanceState);
-        if (Window is { } window)
-        {
-            WindowCompat.GetInsetsController(window, window.DecorView)?.AppearanceLightStatusBars = false;
-        }
-    }
 }
