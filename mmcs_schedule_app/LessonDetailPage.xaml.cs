@@ -8,14 +8,21 @@ public class LessonItemInfo
 {
     public string MainText { get; set; }
     public string SubText { get; set; }
-    public object ItemData { get; set; }
+
+    /// <summary>
+    /// Run when the main (sub) text is tapped; null when there is nothing to open
+    /// </summary>
+    public Func<Task>? MainAction { get; }
+    public Func<Task>? SubAction { get; }
     public bool HasSubText => !string.IsNullOrEmpty(SubText);
 
-    public LessonItemInfo(string mainText, string subText, object itemData)
+    public LessonItemInfo(string mainText, string subText, Func<Task>? mainAction,
+        Func<Task>? subAction = null)
     {
         MainText = mainText;
         SubText = subText;
-        ItemData = itemData;
+        MainAction = mainAction;
+        SubAction = subAction;
     }
 }
 
@@ -29,20 +36,32 @@ public partial class LessonDetailPage
     public string LessonInfo { get; set; } = "";
     public string WeekType { get; set; } = "";
     public string ListLabel { get; set; } = "";
-    public string RoomInfo { get; set; } = "";
+
+    public ObservableCollection<LessonItemInfo> Links { get; set; } = [];
 
     public ObservableCollection<LessonItemInfo> Items { get; set; } = [];
 
     public ICommand ItemTappedCommand { get; }
 
-    // Constructor for student schedule (shows teachers)
-    public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, string lessonInfo,
-        List<Curriculum> curricula, INavigation parentNav)
+    private LessonDetailPage(INavigation parentNav)
     {
         InitializeComponent();
 
         parentNavigation = parentNav;
 
+        ItemTappedCommand = new Command<Func<Task>?>(action =>
+        {
+            if (action != null)
+            {
+                _ = this.RunSafelyAsync(action);
+            }
+        });
+    }
+
+    // Constructor for student schedule (shows teachers)
+    public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, string lessonInfo,
+        List<Curriculum> curricula, INavigation parentNav) : this(parentNav)
+    {
         SetupCommonInfo(disciplineName, timeslot, lessonInfo);
 
         ListLabel = "Преподаватели:";
@@ -52,34 +71,39 @@ public partial class LessonDetailPage
             Items.Add(new LessonItemInfo(
                 curriculum.TeacherName,
                 $"ауд. {curriculum.RoomName}",
-                curriculum.TeacherId
+                OpenTeacher(curriculum),
+                OpenRoom(curriculum)
             ));
         }
-
-        ItemTappedCommand = new Command<LessonItemInfo>(item =>
-        {
-            if (!string.IsNullOrWhiteSpace(item.MainText))
-            {
-                _ = this.RunSafelyAsync(() => OnTeacherTapped((int)item.ItemData));
-            }
-        });
 
         BindingContext = this;
     }
 
-    // Constructor for teacher schedule (shows groups)
+    // Constructor for teacher and room schedules (shows groups, links lead to the rooms or the teachers)
     public LessonDetailPage(string disciplineName, TimeOfLesson timeslot, string lessonInfo,
-        List<TechGroup> groups, string roomName, INavigation parentNav)
+        List<TechGroup> groups, List<Curriculum> curricula, bool forRoom, INavigation parentNav)
+        : this(parentNav)
     {
-        InitializeComponent();
-
-        parentNavigation = parentNav;
-
         SetupCommonInfo(disciplineName, timeslot, lessonInfo);
 
         ListLabel = "Группы:";
 
-        RoomInfo = $"\nАудитория: {roomName}";
+        if (forRoom)
+        {
+            foreach (Curriculum curriculum in curricula
+                .Where(c => !string.IsNullOrWhiteSpace(c.TeacherName)).DistinctBy(c => c.TeacherId))
+            {
+                Links.Add(new LessonItemInfo(curriculum.TeacherName, "", OpenTeacher(curriculum)));
+            }
+        }
+        else
+        {
+            foreach (Curriculum curriculum in curricula
+                .Where(c => !string.IsNullOrWhiteSpace(c.RoomName)).DistinctBy(c => c.RoomId))
+            {
+                Links.Add(new LessonItemInfo("Аудитория: " + curriculum.RoomName, "", OpenRoom(curriculum)));
+            }
+        }
 
         foreach (TechGroup techGroup in groups)
         {
@@ -88,14 +112,27 @@ public partial class LessonDetailPage
             Items.Add(new LessonItemInfo(
                 groupDisplay,
                 "", // No room info per item
-                techGroup
+                () => OnGroupTapped(techGroup)
             ));
         }
 
-        ItemTappedCommand = new Command<LessonItemInfo>(
-            item => _ = this.RunSafelyAsync(() => OnGroupTapped((TechGroup)item.ItemData)));
-
         BindingContext = this;
+    }
+
+    /// <returns>Null if there is no teacher name, as there is no teacher to open</returns>
+    private Func<Task>? OpenTeacher(Curriculum curriculum)
+    {
+        return string.IsNullOrWhiteSpace(curriculum.TeacherName)
+            ? null
+            : () => OpenScheduleAsync(User.UserInfo.Teacher, curriculum.TeacherId, curriculum.TeacherName);
+    }
+
+    /// <returns>Null if there is no room name, as there is no room to open</returns>
+    private Func<Task>? OpenRoom(Curriculum curriculum)
+    {
+        return string.IsNullOrWhiteSpace(curriculum.RoomName)
+            ? null
+            : () => OpenScheduleAsync(User.UserInfo.Room, curriculum.RoomId, "Ауд. " + curriculum.RoomName);
     }
 
     private void SetupCommonInfo(string disciplineName, TimeOfLesson timeslot, string lessonInfo)
@@ -113,27 +150,11 @@ public partial class LessonDetailPage
         WeekType = timeslot.Week == -1 ? "" : "\n" + timeslot.WeekName;
     }
 
-    private async Task OnTeacherTapped(int teacherId)
+    private async Task OpenScheduleAsync(User.UserInfo info, int id, string header)
     {
-        Teacher? teacher;
-        try
-        {
-            teacher = (await MainPage.GetTeachersAsync()).FirstOrDefault(t => t.Id == teacherId);
-        }
-        catch (SchRequests.ScheduleUnavailableException)
-        {
-            await ShowUnavailableAlert();
-            return;
-        }
-        if (teacher == null)
-        {
-            return;
-        }
-
         await ClosePopup();
 
-        ScheduleView scheduleView = new(User.UserInfo.Teacher, teacherId, teacher.Name, true);
-        await parentNavigation.PushAsync(scheduleView);
+        await parentNavigation.PushAsync(new ScheduleView(info, id, header, true));
     }
 
     private async Task OnGroupTapped(TechGroup techGroup)

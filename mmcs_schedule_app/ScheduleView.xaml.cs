@@ -108,9 +108,14 @@ public partial class ScheduleView
         {
             SchRequests.FetchInfo info = new();
             currentWeek = await WeekMethods.RequestCurrentWeekAsync(info);
-            allLessons = userInfo == User.UserInfo.Teacher
-                ? await RequestTeacherLessonsAsync(info)
-                : await RequestStudentLessonsAsync(info);
+            allLessons = userInfo switch
+            {
+                User.UserInfo.Teacher => ToLessonItems(
+                    await TeacherMethods.RequestWeekScheduleAsync(userId, info), false),
+                User.UserInfo.Room => ToLessonItems(
+                    await RoomMethods.RequestWeekScheduleAsync(userId, info), true),
+                _ => await RequestStudentLessonsAsync(info)
+            };
             UpdateGroupedLessons();
             isScheduleLoaded = info.StaleSince is null;
             Banner.ShowStale(info, true);
@@ -126,19 +131,27 @@ public partial class ScheduleView
         }
     }
 
-    private async Task<List<LessonItem>> RequestTeacherLessonsAsync(SchRequests.FetchInfo info)
+    private static List<LessonItem> ToLessonItems(
+        List<(Lesson, List<Curriculum>, List<TechGroup>)> schedule, bool forRoom)
     {
         List<LessonItem> lessons = [];
-        foreach ((Lesson, List<Curriculum>, List<TechGroup>) lessonData
-            in await TeacherMethods.RequestWeekScheduleAsync(userId, info))
+        foreach ((Lesson, List<Curriculum>, List<TechGroup>) lessonData in schedule)
         {
             TimeOfLesson slot = TimeOfLesson.Parse(lessonData.Item1.Timeslot);
+            string teachers = forRoom
+                ? string.Join(", ", lessonData.Item2
+                    .Select(c => c.TeacherName).Where(name => name != "").Distinct())
+                : "";
             lessons.Add(new LessonItem(
                 slot.ToString(),
                 lessonData.Item2[0].SubjectName,
-                (string.IsNullOrEmpty(lessonData.Item1.Info) ? "" : lessonData.Item1.Info + "\n")
+                (teachers.Length == 0 ? "" : teachers + "\n")
+                    + (string.IsNullOrEmpty(lessonData.Item1.Info) ? "" : lessonData.Item1.Info + "\n")
                     + slot.WeekName,
-                lessonData.Item2.First().RoomName,
+                forRoom
+                    ? string.Join("\n", lessonData.Item3.Select(
+                        g => $"{MainPage.StuDegreeShort(g.Degree)} {g.GradeNumber}.{g.GroupNumber}"))
+                    : lessonData.Item2.First().RoomName,
                 string.Join("\n", lessonData.Item3.Select(
                     g => $"• {StuDegreeShort(g.Degree)} {g.GradeNumber}.{g.GroupNumber}")),
                 slot,
@@ -267,12 +280,13 @@ public partial class ScheduleView
 
         LessonDetailPage detailPage;
 
-        if (userInfo == User.UserInfo.Teacher && item.TeacherData.Item1 != null)
+        bool listsGroups = userInfo is User.UserInfo.Teacher or User.UserInfo.Room;
+        if (listsGroups && item.TeacherData.Item1 != null)
         {
             detailPage = new LessonDetailPage(item.Name, item.Timeslot, item.TeacherData.Item1.Info,
-                item.TeacherData.Item3, item.Room, Navigation);
+                item.TeacherData.Item3, item.TeacherData.Item2, userInfo == User.UserInfo.Room, Navigation);
         }
-        else if (userInfo != User.UserInfo.Teacher && item.StudentData.Item1 != null)
+        else if (!listsGroups && item.StudentData.Item1 != null)
         {
             detailPage = new LessonDetailPage(item.Name, item.Timeslot, item.StudentData.Item1.Info,
                 item.StudentData.Item2, Navigation);

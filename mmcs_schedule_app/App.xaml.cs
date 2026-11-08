@@ -28,21 +28,11 @@ public partial class App
         }
     }
 
-    internal static Page GetStartPage()
+    private static NavigationPage GetStartPage()
     {
-        NavigationPage page;
-
-        if (IsLoggedIn)
-        {
-            int ownerId = User.Info == User.UserInfo.Teacher ? User.TeacherId : User.GroupId;
-            page = new NavigationPage(new ScheduleView(User.Info, ownerId, User.Header));
-        }
-        else
-        {
-            page = new NavigationPage(new MainPage());
-        }
-
-        return page;
+        return IsLoggedIn
+            ? new NavigationPage(new ScheduleView(User.Info, User.OwnerId, User.Header))
+            : new NavigationPage(new MainPage());
     }
 
     protected override Window CreateWindow(IActivationState? activationState)

@@ -14,6 +14,11 @@ public class User
     [JsonProperty("teacherId")]
     public int TeacherId;
     /// <summary>
+    /// Id of room
+    /// </summary>
+    [JsonProperty("roomId")]
+    public int RoomId;
+    /// <summary>
     /// Id of user`s group
     /// </summary>
     [JsonProperty("groupid")]
@@ -41,7 +46,18 @@ public class User
     public string Header = "";
 
     /// <summary>
-    /// Possible types of users
+    /// Id of the teacher, room or group whose schedule is shown
     /// </summary>
-    public enum UserInfo { Teacher, Bachelor, Master, Graduate }
+    [JsonIgnore]
+    public int OwnerId => Info switch
+    {
+        UserInfo.Teacher => TeacherId,
+        UserInfo.Room => RoomId,
+        _ => GroupId
+    };
+
+    /// <summary>
+    /// Possible types of users. Values are persisted as numbers, so new ones go to the end
+    /// </summary>
+    public enum UserInfo { Teacher, Bachelor, Master, Graduate, Room }
 }

@@ -1,6 +1,8 @@
-﻿using Newtonsoft.Json;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Text;
+using API;
+using Newtonsoft.Json;
+using SchRequests;
 
 namespace mmcs_schedule_app;
 
@@ -9,9 +11,10 @@ namespace mmcs_schedule_app;
 [DesignTimeVisible(false)]
 public partial class MainPage
 {
-    private API.Grade[] grades = [];
-    private API.Teacher[] teachers = [];
-    private API.User user = new();
+    private Grade[] grades = [];
+    private Teacher[] teachers = [];
+    private Room[] rooms = [];
+    private User user = new();
 
     private bool isDataLoaded;
     private bool isLoading;
@@ -19,24 +22,25 @@ public partial class MainPage
     private int? pendingGroupId;
     private bool loadFailed;
     private bool groupsFailed;
-    private SchRequests.FetchInfo dataInfo = new();
-    private SchRequests.FetchInfo groupsInfo = new();
+    private FetchInfo dataInfo = new();
+    private FetchInfo groupsInfo = new();
 
     // Static cached data with lazy loading
-    private static API.Grade[]? _cachedGrades;
-    private static API.Teacher[]? _cachedTeachers;
-    private static readonly Dictionary<int, API.Group[]> _cachedGroups = [];
+    private static Grade[]? _cachedGrades;
+    private static Teacher[]? _cachedTeachers;
+    private static Room[]? _cachedRooms;
+    private static readonly Dictionary<int, Group[]> _cachedGroups = [];
 
     private static async Task<T> GetMemoizedAsync<T>(
-        T? memo, Func<SchRequests.FetchInfo, Task<T>> request, Action<T> save,
-        SchRequests.FetchInfo? info) where T : class
+        T? memo, Func<FetchInfo, Task<T>> request, Action<T> save,
+        FetchInfo? info) where T : class
     {
         if (memo is not null)
         {
             return memo;
         }
 
-        SchRequests.FetchInfo requestInfo = new();
+        FetchInfo requestInfo = new();
         T result = await request(requestInfo);
         info?.Merge(requestInfo);
         if (requestInfo.StaleSince is null)
@@ -46,29 +50,38 @@ public partial class MainPage
         return result;
     }
 
-    public static Task<API.Grade[]> GetGradesAsync(SchRequests.FetchInfo? info = null)
+    public static Task<Grade[]> GetGradesAsync(FetchInfo? info = null)
     {
         return GetMemoizedAsync(
             _cachedGrades,
-            API.GradeMethods.GetGradesListAsync,
+            GradeMethods.GetGradesListAsync,
             loaded => _cachedGrades = loaded,
             info);
     }
 
-    public static Task<API.Teacher[]> GetTeachersAsync(SchRequests.FetchInfo? info = null)
+    public static Task<Teacher[]> GetTeachersAsync(FetchInfo? info = null)
     {
         return GetMemoizedAsync(
             _cachedTeachers,
-            API.TeacherMethods.GetTeachersListAsync,
+            TeacherMethods.GetTeachersListAsync,
             loaded => _cachedTeachers = loaded,
             info);
     }
 
-    public static Task<API.Group[]> GetGroupsAsync(int gradeId, SchRequests.FetchInfo? info = null)
+    public static Task<Room[]> GetRoomsAsync(FetchInfo? info = null)
+    {
+        return GetMemoizedAsync(
+            _cachedRooms,
+            RoomMethods.GetRoomsListAsync,
+            loaded => _cachedRooms = loaded,
+            info);
+    }
+
+    public static Task<Group[]> GetGroupsAsync(int gradeId, FetchInfo? info = null)
     {
         return GetMemoizedAsync(
             _cachedGroups.GetValueOrDefault(gradeId),
-            requestInfo => API.GradeMethods.GetGroupsListAsync(gradeId, requestInfo),
+            requestInfo => GradeMethods.GetGroupsListAsync(gradeId, requestInfo),
             loaded => _cachedGroups[gradeId] = loaded,
             info);
     }
@@ -94,24 +107,29 @@ public partial class MainPage
         if (App.IsLoggedIn)
         {
             user = App.User;
-            bool isTeacher = user.Info == API.User.UserInfo.Teacher;
-            RolePicker.SelectedIndex = isTeacher ? 1 : 0;
-            if (isTeacher)
+            switch (user.Info)
             {
-                GradeOrTeacherPicker.SelectedIndex = Array.FindIndex(teachers, t => t.Id == user.TeacherId);
-            }
-            else
-            {
-                int gradeIndex = FindSavedGradeIndex();
-                if (gradeIndex >= 0)
-                {
-                    pendingGroupId = user.GroupId;
-                }
-                GradeOrTeacherPicker.SelectedIndex = gradeIndex;
+                case User.UserInfo.Teacher:
+                    RolePicker.SelectedIndex = 1;
+                    OwnerPicker.SelectedIndex = Array.FindIndex(teachers, t => t.Id == user.TeacherId);
+                    break;
+                case User.UserInfo.Room:
+                    RolePicker.SelectedIndex = 2;
+                    OwnerPicker.SelectedIndex = Array.FindIndex(rooms, r => r.Id == user.RoomId);
+                    break;
+                default:
+                    RolePicker.SelectedIndex = 0;
+                    int gradeIndex = FindSavedGradeIndex();
+                    if (gradeIndex >= 0)
+                    {
+                        pendingGroupId = user.GroupId;
+                    }
+                    OwnerPicker.SelectedIndex = gradeIndex;
+                    break;
             }
             App.IsLoggedIn = false;
             File.Delete(App.FileName);
-            App.User = new API.User();
+            App.User = new User();
         }
     }
 
@@ -149,15 +167,16 @@ public partial class MainPage
         SetLoading(true);
         try
         {
-            SchRequests.FetchInfo info = new();
+            FetchInfo info = new();
             grades = await GetGradesAsync(info);
             teachers = [.. (await GetTeachersAsync(info)).Where(t => !string.IsNullOrWhiteSpace(t.Name))];
+            rooms = [.. (await GetRoomsAsync(info)).Where(r => !string.IsNullOrWhiteSpace(r.Name))];
             dataInfo = info;
             isDataLoaded = info.StaleSince is null;
             RolePicker.IsEnabled = true;
             return true;
         }
-        catch (SchRequests.ScheduleUnavailableException)
+        catch (ScheduleUnavailableException)
         {
             loadFailed = true;
             return false;
@@ -189,7 +208,7 @@ public partial class MainPage
             return;
         }
 
-        SchRequests.FetchInfo combined = new();
+        FetchInfo combined = new();
         combined.Merge(dataInfo);
         combined.Merge(groupsInfo);
         Banner.ShowStale(combined, dataInfo.StaleSince is not null);
@@ -202,21 +221,21 @@ public partial class MainPage
         GroupPicker.SelectedIndex = -1;
         OkButton.IsEnabled = false;
         groupsFailed = false;
-        groupsInfo = new SchRequests.FetchInfo();
+        groupsInfo = new FetchInfo();
         UpdateBanner();
         SetLoading(true);
         try
         {
-            API.Grade grade = grades[gradeIndex];
-            SchRequests.FetchInfo info = new();
+            Grade grade = grades[gradeIndex];
+            FetchInfo info = new();
             grade.Groups = [.. await GetGroupsAsync(grade.Id, info)];
             groupsInfo = info;
-            if (GradeOrTeacherPicker.SelectedIndex != gradeIndex)
+            if (OwnerPicker.SelectedIndex != gradeIndex)
             {
                 return;
             }
 
-            foreach (API.Group group in grade.Groups)
+            foreach (Group group in grade.Groups)
             {
                 GroupPicker.Items.Add(group.Name + " группа " + group.Number);
             }
@@ -227,10 +246,10 @@ public partial class MainPage
             }
             pendingGroupId = null;
         }
-        catch (SchRequests.ScheduleUnavailableException)
+        catch (ScheduleUnavailableException)
         {
             pendingGroupId = null;
-            GradeOrTeacherPicker.SelectedIndex = -1;
+            OwnerPicker.SelectedIndex = -1;
             groupsFailed = true;
         }
         finally
@@ -250,31 +269,41 @@ public partial class MainPage
         if (sender is not Picker picker || picker.SelectedIndex == 0)
         {
             //Set to fix user is a student, later reaasigned to correct grade
-            user.Info = API.User.UserInfo.Bachelor;
-            GradeOrTeacherPicker.Items.Clear();
-            GradeOrTeacherPicker.Title = "Курс";
-            foreach (API.Grade grade in grades)
+            user.Info = User.UserInfo.Bachelor;
+            OwnerPicker.Items.Clear();
+            OwnerPicker.Title = "Курс";
+            foreach (Grade grade in grades)
             {
-                GradeOrTeacherPicker.Items.Add(StuDegree(grade.Degree) + " " + grade.Number + " курс");
+                OwnerPicker.Items.Add(StuDegree(grade.Degree) + " " + grade.Number + " курс");
             }
         }
         else if (picker.SelectedIndex == 1)
         {
-            user.Info = API.User.UserInfo.Teacher;
-            GradeOrTeacherPicker.Items.Clear();
-            GradeOrTeacherPicker.Title = "Имя";
-            foreach (API.Teacher teacher in teachers)
+            user.Info = User.UserInfo.Teacher;
+            OwnerPicker.Items.Clear();
+            OwnerPicker.Title = "ФИО";
+            foreach (Teacher teacher in teachers)
             {
-                GradeOrTeacherPicker.Items.Add(teacher.Name);
+                OwnerPicker.Items.Add(teacher.Name);
             }
         }
-        GradeOrTeacherPicker.SelectedIndex = -1;
-        GradeOrTeacherPicker.IsEnabled = true;
+        else if (picker.SelectedIndex == 2)
+        {
+            user.Info = User.UserInfo.Room;
+            OwnerPicker.Items.Clear();
+            OwnerPicker.Title = "Аудитория";
+            foreach (Room room in rooms)
+            {
+                OwnerPicker.Items.Add(room.Name.Trim());
+            }
+        }
+        OwnerPicker.SelectedIndex = -1;
+        OwnerPicker.IsEnabled = true;
         GroupPicker.SelectedIndex = -1;
         GroupPicker.IsEnabled = false;
         OkButton.IsEnabled = false;
     }
-    private void GradeOrTeacherPicker_SelectedIndexChanged(object sender, EventArgs e)
+    private void OwnerPicker_SelectedIndexChanged(object sender, EventArgs e)
     {
         if (sender is not Picker picker || picker.SelectedIndex == -1)
         {
@@ -282,30 +311,36 @@ public partial class MainPage
         }
 
         user.GradeOrTeacherIndex = picker.SelectedIndex;
-        if (user.Info == API.User.UserInfo.Teacher)
+        if (user.Info == User.UserInfo.Teacher)
         {
             GroupPicker.IsEnabled = false;
             user.TeacherId = teachers.First(t => t.Name == picker.Items[picker.SelectedIndex]).Id;
             OkButton.IsEnabled = true;
         }
+        else if (user.Info == User.UserInfo.Room)
+        {
+            GroupPicker.IsEnabled = false;
+            user.RoomId = rooms[picker.SelectedIndex].Id;
+            OkButton.IsEnabled = true;
+        }
         else
         {
-            user.Info = grades[GradeOrTeacherPicker.SelectedIndex].Degree switch
+            user.Info = grades[OwnerPicker.SelectedIndex].Degree switch
             {
-                "bachelor" => API.User.UserInfo.Bachelor,
-                "master" => API.User.UserInfo.Master,
-                "specialist" => API.User.UserInfo.Bachelor,
-                "postgraduate" => API.User.UserInfo.Graduate,
+                "bachelor" => User.UserInfo.Bachelor,
+                "master" => User.UserInfo.Master,
+                "specialist" => User.UserInfo.Bachelor,
+                "postgraduate" => User.UserInfo.Graduate,
                 _ => user.Info
             };
-            user.GradeId = grades[GradeOrTeacherPicker.SelectedIndex].Id;
-            user.Course = grades[GradeOrTeacherPicker.SelectedIndex].Number;
-            int gradeIndex = GradeOrTeacherPicker.SelectedIndex;
+            user.GradeId = grades[OwnerPicker.SelectedIndex].Id;
+            user.Course = grades[OwnerPicker.SelectedIndex].Number;
+            int gradeIndex = OwnerPicker.SelectedIndex;
             _ = this.RunSafelyAsync(() => LoadGroupsAsync(gradeIndex));
         }
     }
-    private API.Group SelectedGroup =>
-        grades[GradeOrTeacherPicker.SelectedIndex].Groups[GroupPicker.SelectedIndex];
+    private Group SelectedGroup =>
+        grades[OwnerPicker.SelectedIndex].Groups[GroupPicker.SelectedIndex];
 
     private void GroupPicker_SelectedIndexChanged(object sender, EventArgs e)
     {
@@ -327,10 +362,14 @@ public partial class MainPage
 
     private async Task SaveUserAndOpenScheduleAsync()
     {
-        user.Header = user.Info == API.User.UserInfo.Teacher
-            ? GradeOrTeacherPicker.Items[GradeOrTeacherPicker.SelectedIndex]
-            : string.Join(" ", StuDegreeShort(user.Info.ToString().ToLowerInvariant()),
-                SelectedGroup.Name, user.Course + "." + user.GroupNumber);
+        string selectedName = OwnerPicker.Items[OwnerPicker.SelectedIndex];
+        user.Header = user.Info switch
+        {
+            User.UserInfo.Teacher => selectedName,
+            User.UserInfo.Room => "Ауд. " + selectedName,
+            _ => string.Join(" ", StuDegreeShort(user.Info.ToString().ToLowerInvariant()),
+                SelectedGroup.Name, user.Course + "." + user.GroupNumber)
+        };
         App.User = user;
         try
         {
@@ -345,8 +384,7 @@ public partial class MainPage
                 "OK");
         }
         App.IsLoggedIn = true;
-        int ownerId = user.Info == API.User.UserInfo.Teacher ? user.TeacherId : user.GroupId;
-        Navigation.InsertPageBefore(new ScheduleView(user.Info, ownerId, user.Header), this);
+        Navigation.InsertPageBefore(new ScheduleView(user.Info, user.OwnerId, user.Header), this);
         await Navigation.PopAsync();
     }
 

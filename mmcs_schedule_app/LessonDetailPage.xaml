@@ -51,11 +51,26 @@
                                     <Span Text="{Binding WeekType}"
                                           FontSize="16"
                                           FontAttributes="Italic" />
-                                    <Span Text="{Binding RoomInfo}"
-                                          FontSize="16" />
                                 </FormattedString>
                             </Label.FormattedText>
                         </Label>
+                        <!-- Room/Teachers links -->
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Links}"
+                                             HorizontalOptions="Center">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="local:LessonItemInfo">
+                                    <Label Text="{Binding MainText}"
+                                           FontSize="16"
+                                           Padding="0,3"
+                                           HorizontalTextAlignment="Center">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type local:LessonDetailPage}}, Path=ItemTappedCommand}"
+                                                                  CommandParameter="{Binding MainAction}" />
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
                         <!-- Teachers/Groups list -->
                         <CollectionView ItemsSource="{Binding Items}"
                                         SelectionMode="None">
@@ -63,20 +78,26 @@
                                 <DataTemplate x:DataType="local:LessonItemInfo">
                                     <HorizontalStackLayout Spacing="10"
                                                            Padding="5">
-                                        <HorizontalStackLayout.GestureRecognizers>
-                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type local:LessonDetailPage}}, Path=ItemTappedCommand}"
-                                                                  CommandParameter="{Binding .}" />
-                                        </HorizontalStackLayout.GestureRecognizers>
                                         <Label Text="•"
                                                FontSize="16"
                                                VerticalOptions="Start" />
                                         <VerticalStackLayout Spacing="7">
                                             <Label Text="{Binding MainText}"
-                                                   FontSize="16" />
+                                                   FontSize="16">
+                                                <Label.GestureRecognizers>
+                                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type local:LessonDetailPage}}, Path=ItemTappedCommand}"
+                                                                          CommandParameter="{Binding MainAction}" />
+                                                </Label.GestureRecognizers>
+                                            </Label>
                                             <Label Text="{Binding SubText}"
                                                    FontSize="14"
                                                    TextColor="Gray"
-                                                   IsVisible="{Binding HasSubText}" />
+                                                   IsVisible="{Binding HasSubText}">
+                                                <Label.GestureRecognizers>
+                                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type local:LessonDetailPage}}, Path=ItemTappedCommand}"
+                                                                          CommandParameter="{Binding SubAction}" />
+                                                </Label.GestureRecognizers>
+                                            </Label>
                                         </VerticalStackLayout>
                                     </HorizontalStackLayout>
                                 </DataTemplate>

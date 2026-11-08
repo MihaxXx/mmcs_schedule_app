@@ -170,7 +170,15 @@ public static class TeacherMethods
         int teacherId, SchRequests.FetchInfo? info = null)
     {
         string url = mmcs_schedule_app.App.Host + "/APIv1/schedule/teacher/" + teacherId;
-        SchOfTeacher schedule = await SchRequests.SchRequests.GetAsync<SchOfTeacher>(url, info);
+        return BuildWeekSchedule(await SchRequests.SchRequests.GetAsync<SchOfTeacher>(url, info));
+    }
+
+    /// <summary>
+    /// Pairs every lesson of <paramref name="schedule"/> with its curricula and groups
+    /// </summary>
+    /// <returns>Ordered by day of week and time week schedule</returns>
+    internal static List<(Lesson, List<Curriculum>, List<TechGroup>)> BuildWeekSchedule(SchOfTeacher schedule)
+    {
         List<(Lesson, List<Curriculum>, List<TechGroup>)> result = [];
         foreach (Lesson lesson in schedule.Lessons)
         {
@@ -181,6 +189,32 @@ public static class TeacherMethods
         }
         result.Sort(CompareByDayAndTime);
         return result;
+    }
+}
+
+public static class RoomMethods
+{
+    /// <summary>
+    /// Get rooms list (not cached)
+    /// </summary>
+    public static async Task<Room[]> GetRoomsListAsync(SchRequests.FetchInfo? info = null)
+    {
+        const string url = mmcs_schedule_app.App.Host + "/APIv1/room/list";
+        return await SchRequests.SchRequests.GetAsync<Room[]>(url, info);
+    }
+
+    /// <summary>
+    /// Request week schedule for <paramref name="roomId"/>
+    /// </summary>
+    /// <param name="roomId"></param>
+    /// <param name="info">Receives the date of the offline cache if it was used</param>
+    /// <returns>Ordered by day of week and time week schedule</returns>
+    public static async Task<List<(Lesson, List<Curriculum>, List<TechGroup>)>> RequestWeekScheduleAsync(
+        int roomId, SchRequests.FetchInfo? info = null)
+    {
+        string url = mmcs_schedule_app.App.Host + "/APIv1/schedule/room/" + roomId;
+        SchOfTeacher schedule = await SchRequests.SchRequests.GetAsync<SchOfTeacher>(url, info);
+        return TeacherMethods.BuildWeekSchedule(schedule);
     }
 }
 

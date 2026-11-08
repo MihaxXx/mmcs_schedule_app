@@ -173,6 +173,16 @@ public class Week
 }
 
 /// <summary>
+/// Аудитория (для списка аудиторий)
+/// </summary>
+public class Room
+{
+    public int Id { get; set; }
+
+    public string Name { get; set; } = "";
+}
+
+/// <summary>
 /// Преподаватель (для списка преподов)
 /// </summary>
 public class Teacher
