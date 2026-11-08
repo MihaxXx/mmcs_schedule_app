@@ -406,9 +406,74 @@ public partial class MainPage
     /// </summary>
     public static string GroupShortName(API.TechGroup group)
     {
-        string degree = StuDegreeShort(group.Degree).TrimEnd('.');
-        return $"{degree}-{group.GradeNumber} {group.Name}-{group.GroupNumber}";
+        return $"{GroupProgramName(group)}-{group.GroupNumber}";
     }
+
+    /// <summary>
+    /// Compact name of the group's course within its program, e.g. "Бак-1 ФИИТ"
+    /// </summary>
+    public static string GroupProgramName(API.TechGroup group)
+    {
+        return $"{GroupCourseName(group)} {ProgramShortName(group.Name)}";
+    }
+
+    /// <summary>
+    /// Compact name of the group's degree and course, e.g. "Бак-1"
+    /// </summary>
+    public static string GroupCourseName(API.TechGroup group)
+    {
+        return $"{StuDegreeShort(group.Degree).TrimEnd('.')}-{group.GradeNumber}";
+    }
+
+    /// <summary>
+    /// Shortens a program name of more than <see cref="MaxProgramNameLetters"/> letters: an ordinary
+    /// word becomes its capital initial, "и" stays, anything else (abbreviations, Latin text) is kept,
+    /// e.g. "КН и прикладной ИИ" gives "КНиПИИ". Initials and "и" attach to their neighbours.
+    /// A single ordinary word is cut to its first three letters ("Математика" gives "Мат").
+    /// A short name made of abbreviations only still gets its "и" attached ("ММ и ИИ" gives "ММиИИ"),
+    /// so that the same program spelled in both ways looks the same.
+    /// </summary>
+    public static string ProgramShortName(string name)
+    {
+        string[] tokens = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        bool isLong = name.Count(char.IsLetter) > MaxProgramNameLetters;
+        if (tokens.Length == 1)
+        {
+            return isLong && IsOrdinaryWord(name) ? name[..3] : name;
+        }
+        if (!isLong && tokens.Any(IsOrdinaryWord))
+        {
+            return name;
+        }
+
+        StringBuilder result = new();
+        bool previousIsGlued = false;
+        foreach (string token in tokens)
+        {
+            bool isWord = IsOrdinaryWord(token);
+            bool isGlued = isWord || token == "и";
+            if (result.Length > 0 && !isGlued && !previousIsGlued)
+            {
+                result.Append(' ');
+            }
+            result.Append(isWord ? char.ToUpperInvariant(token[0]).ToString() : token);
+            previousIsGlued = isGlued;
+        }
+        return result.ToString();
+    }
+
+    private const int MaxProgramNameLetters = 7;
+
+    /// <returns>True for a Cyrillic word with only the first letter capital, e.g. "Механика"</returns>
+    private static bool IsOrdinaryWord(string token)
+    {
+        string letters = token.TrimEnd('.');
+        return letters.Length > 1
+            && IsCyrillic(letters[0])
+            && letters.Skip(1).All(c => IsCyrillic(c) && char.IsLower(c));
+    }
+
+    private static bool IsCyrillic(char c) => c is >= 'А' and <= 'я' or 'Ё' or 'ё';
 
     /// <summary>
     /// Group name for titles and popups, e.g. "Бак. 1к ФИИТ 1гр"
