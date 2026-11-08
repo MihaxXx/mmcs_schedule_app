@@ -365,10 +365,15 @@ public partial class MainPage
         string selectedName = OwnerPicker.Items[OwnerPicker.SelectedIndex];
         user.Header = user.Info switch
         {
-            User.UserInfo.Teacher => selectedName,
+            User.UserInfo.Teacher => TeacherTitle(selectedName),
             User.UserInfo.Room => "Ауд. " + selectedName,
-            _ => string.Join(" ", StuDegreeShort(user.Info.ToString().ToLowerInvariant()),
-                SelectedGroup.Name, user.Course + "." + user.GroupNumber)
+            _ => GroupTitle(new API.TechGroup
+            {
+                Degree = user.Info.ToString().ToLowerInvariant(),
+                GradeNumber = user.Course,
+                Name = SelectedGroup.Name,
+                GroupNumber = user.GroupNumber
+            })
         };
         App.User = user;
         try
@@ -474,6 +479,49 @@ public partial class MainPage
     }
 
     private static bool IsCyrillic(char c) => c is >= 'А' and <= 'я' or 'Ё' or 'ё';
+
+    /// <summary>
+    /// Teacher name for page titles: "Муленко Владимир Павлович" gives "Муленко В. П.". Names that are
+    /// already given as initials are kept.
+    /// </summary>
+    public static string TeacherTitle(string fullName)
+    {
+        string[] parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Join(" ", parts.Select((part, index) =>
+            index == 0 || part.TrimEnd('.').Length < 2 ? part : $"{char.ToUpperInvariant(part[0])}."));
+    }
+
+    /// <summary>
+    /// Page title of the saved user's schedule. A student's title saved by earlier versions, like
+    /// "Асп. Информатика и вычислительная техника 1.2", is rebuilt in the current format.
+    /// </summary>
+    public static string UserTitle(API.User user)
+    {
+        string legacyTail = $" {user.Course}.{user.GroupNumber}";
+        int firstSpace = user.Header.IndexOf(' ');
+        return user.Info switch
+        {
+            API.User.UserInfo.Teacher => TeacherTitle(user.Header),
+            API.User.UserInfo.Room => user.Header,
+            _ when firstSpace < 0 || !user.Header.EndsWith(legacyTail) => user.Header,
+            _ => GroupTitle(new API.TechGroup
+            {
+                Degree = user.Info.ToString().ToLowerInvariant(),
+                GradeNumber = user.Course,
+                Name = user.Header[(firstSpace + 1)..^legacyTail.Length],
+                GroupNumber = user.GroupNumber
+            })
+        };
+    }
+
+    /// <summary>
+    /// Group name for page titles, e.g. "Бак. 1к. ФИИТ 1гр."
+    /// </summary>
+    public static string GroupTitle(API.TechGroup group)
+    {
+        string program = ProgramShortName(group.Name);
+        return $"{StuDegreeShort(group.Degree)} {group.GradeNumber}к. {program} {group.GroupNumber}гр.";
+    }
 
     /// <summary>
     /// Group name for titles and popups, e.g. "Бак. 1к ФИИТ 1гр"

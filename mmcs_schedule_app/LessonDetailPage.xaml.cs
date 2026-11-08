@@ -127,7 +127,8 @@ public partial class LessonDetailPage
     {
         return string.IsNullOrWhiteSpace(curriculum.TeacherName)
             ? null
-            : () => OpenScheduleAsync(User.UserInfo.Teacher, curriculum.TeacherId, curriculum.TeacherName);
+            : () => OpenScheduleAsync(
+                User.UserInfo.Teacher, curriculum.TeacherId, MainPage.TeacherTitle(curriculum.TeacherName));
     }
 
     /// <returns>Null if there is no room name, as there is no room to open</returns>
@@ -196,7 +197,7 @@ public partial class LessonDetailPage
             _ => User.UserInfo.Bachelor
         };
 
-        ScheduleView scheduleView = new(userInfo, group.Id, MainPage.GroupFullName(techGroup), true);
+        ScheduleView scheduleView = new(userInfo, group.Id, MainPage.GroupTitle(techGroup), true);
         await parentNavigation.PushAsync(scheduleView);
     }
 

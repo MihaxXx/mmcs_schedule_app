@@ -30,9 +30,13 @@ public partial class App
 
     private static NavigationPage GetStartPage()
     {
-        return IsLoggedIn
-            ? new NavigationPage(new ScheduleView(User.Info, User.OwnerId, User.Header))
-            : new NavigationPage(new MainPage());
+        if (!IsLoggedIn)
+        {
+            return new NavigationPage(new MainPage());
+        }
+
+        string title = mmcs_schedule_app.MainPage.UserTitle(User);
+        return new NavigationPage(new ScheduleView(User.Info, User.OwnerId, title));
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
